@@ -1,4 +1,0 @@
-
-mkdir -p /mnt/nvme/qubetics/cosmovisor/genesis/bin
-ln -s /usr/local/bin/qubeticsd /mnt/nvme/qubetics/cosmovisor/genesis/bin/qubeticsd
-mkdir -p /mnt/nvme/qubetics/data
