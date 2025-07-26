@@ -15,6 +15,7 @@ Build the Dockerfile as an amd64 image for x86 usage (ARM is not currently suppo
 * Modifies the qubetics_ubuntu_node.sh script to start the qubeticsd directly from cosmovisor since systemctl is not supported in Docker
 * Can be run as amd64 on any ARM system (eg. raspberry pi 5) with qemu emulation enabled
 * Creates a cosmovisor.log for viewing the block indexing in the background and to troubleshoot errors
+* setup script sets fase fees to .01tics for best network performance (Per Qubetics reccomendation)
 
 ### Usage
 
