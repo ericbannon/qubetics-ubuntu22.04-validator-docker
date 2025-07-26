@@ -146,3 +146,21 @@ tail -f /mnt/nvme/qubetics/cosmovisor.log
 
 * I will continue to pull from the upstream fork and make modifications to this repo to ensure validator-node enhancements continue to work in a Dockerized configuration
 
+
+### Useful commands to retrive Node Info
+
+#### Get Tendermint Validator Public Key
+
+```
+$DAEMON_NAME tendermint show-validator --home $DAEMON_HOME
+```
+
+#### Get Node ID
+```
+$DAEMON_NAME tendermint show-node-id --home $DAEMON_HOME
+```
+
+#### Get Bech32 Wallet Address 
+```
+$DAEMON_NAME keys show $KEYS --keyring-backend $KEYRING --home $DAEMON_HOME -a
+```
