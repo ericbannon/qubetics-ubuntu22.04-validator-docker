@@ -43,7 +43,7 @@ print_status "Detected OS: $OS $VERSION"
 BINARY="qubeticsd"
 
 # Set dedicated home directory for the qubeticsd instance
-HOMEDIR="/data/.tmp-qubeticsd"
+HOMEDIR="/mnt/nvme/qubetics"
 print_status "Setting up daemon environment..."
 
 # Update profile with daemon settings
