@@ -1,0 +1,14 @@
+### Include this in your ./bashrc to auto-exec into the running validator node container when you enter your sheel
+
+CONTAINER_NAME="validator-node"
+
+# Only do this for SSH sessions with a TTY
+if [ -n "$SSH_CONNECTION" ] && [ -t 0 ]; then
+  if docker ps -q -f name=$CONTAINER_NAME >/dev/null; then
+    echo "🔁 Attaching to $CONTAINER_NAME..."
+    exec docker exec -it $CONTAINER_NAME bash
+  else
+    echo "⚠️ Container '$CONTAINER_NAME' is not running."
+  fi
+fi
+
