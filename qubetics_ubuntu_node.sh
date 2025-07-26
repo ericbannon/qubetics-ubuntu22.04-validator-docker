@@ -56,7 +56,7 @@ KEYALGO="eth_secp256k1"
 LOGLEVEL="info"
 
 # Set dedicated home directory for the qubeticsd instance
- HOMEDIR="/data/.tmp-qubeticsd"
+HOMEDIR="/mnt/nvme/qubetics"
 
 # Path variables
 CONFIG=$HOMEDIR/config/config.toml
@@ -104,6 +104,15 @@ fi
 	echo "========================================================================================================================"
 	echo "========================================================================================================================"
 	qubeticsd init $MONIKER -o --chain-id $CHAINID --home "$HOMEDIR"
+
+#  Create required Cosmovisor directories
+
+mkdir -p "$DAEMON_HOME/cosmovisor/genesis/bin"
+ln -s /usr/local/bin/qubeticsd "$DAEMON_HOME/cosmovisor/genesis/bin/qubeticsd"
+mkdir -p "$DAEMON_HOME/data"
+
+# Set minimum gas price
+sed -i 's/^minimum-gas-prices *=.*/minimum-gas-prices = "0.01tics"/' "$HOMEDIR/config/app.toml"
 
 		# Change parameter token denominations to tics
 	jq '.app_state["staking"]["params"]["bond_denom"]="tics"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
@@ -208,6 +217,10 @@ export DAEMON_LOG_BUFFER_SIZE=512
 export UNSAFE_SKIP_BACKUP=false
 
 # Start the node
-exec cosmovisor run start \
+echo "Starting Cosmovisor..."
+nohup cosmovisor run start \
   --home "$DAEMON_HOME" \
-  --json-rpc.api eth,txpool,personal,net,debug,web3
+  --json-rpc.api eth,txpool,personal,net,debug,web3 \
+  >> "$DAEMON_HOME/cosmovisor.log" 2>&1 &
+
+echo "✅ Cosmovisor started and logging to $DAEMON_HOME/cosmovisor.log"

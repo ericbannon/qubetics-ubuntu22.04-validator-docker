@@ -39,7 +39,7 @@ RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
 
 # Download Node Validtor Scripts
 
-RUN git clone https://github.com/ericbannon/qubetics-mainnetnode-script.git /opt/qubetics
+RUN git clone https://github.com/ericbannon/qubetics-ubuntu22.04-validator-docker.git /opt/qubetics
 
 # Install COSMOVISOR 1.5.0 
 
