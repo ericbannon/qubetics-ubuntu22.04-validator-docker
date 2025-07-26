@@ -84,6 +84,8 @@ Your drive is now mounted at /mnt/nvme and will stay mounted after reboot.
 * You are giving the docker container access to the host filesystem in privilieged mode
 * The container will not restart unless stopped to provide continuity and avoid uneccessary reboots
 
+#### Run the Docker Container in the background"
+
 If running on an ARM based system:
 
 ```
@@ -118,7 +120,7 @@ If already running on x86 platform:
   bannimal/tics-validator-node:latest
 ```
 
-### Install Qubetics Validator Node
+#### Install Qubetics Validator Node
 
 bash -x qubetics_ubuntu_node.sh
 
