@@ -106,7 +106,8 @@ docker run -dit \
 
 If already running on x86 platform:
 
-``docker run -dit \
+```
+docker run -dit \
   --name validator-node \
   --restart unless-stopped \
   --privileged \
