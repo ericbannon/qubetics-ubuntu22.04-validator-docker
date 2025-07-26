@@ -20,7 +20,7 @@ Build the Dockerfile as an amd64 image for x86 usage (ARM is not currently suppo
 
 IMPORTANT: This assumes that you have mounted your desired storage partition as /mnt/nvme/ on your host system. If you have changed this, then your ubuntu setup script home directory will need to be changed accordingly.
 
-#### Mounting SSD partition on your host system"
+#### Mounting SSD partition on your host system
 
 ##### Identify the SSD disk
 
@@ -43,14 +43,12 @@ Inside fdisk:
 g → create GPT partition table
 n → new partition
 w → write and exit
-
+```
 Format as ext4:
 ```
 sudo mkfs.ext4 /dev/nvme0n1p1
 ```
-
 ##### Mount the drive
-
 ```
 sudo mount /dev/nvme0n1p1 /mnt/nvme
 ```
@@ -58,7 +56,6 @@ Check if mounted:
 ```
 df -h
 ```
-
 ##### Auto-mount on Boot
 
 Get the UUID:
