@@ -3,9 +3,6 @@
 ## Description
 This is a working example of a Docker image that leverages Ubuntu 22.04 to run the Qubetics Mainnet Validator Node on any cloud environment, or hardware. 
 
-## Reccomended Usage
-Build the Dockerfile as an amd64 image for x86 usage (ARM is not currently supported upstream) [Dockerfile Example](https://github.com/ericbannon/qubetics-ubuntu22.04-validator-docker/blob/main/Dockerfile)
-
 ### Key notes
 
 * Installs Go 1.22.4 which coscmovisor@v1.5.0 relies on
@@ -17,13 +14,30 @@ Build the Dockerfile as an amd64 image for x86 usage (ARM is not currently suppo
 * Creates a cosmovisor.log for viewing the block indexing in the background and to troubleshoot errors
 * setup script sets fase fees to .01tics for best network performance (Per Qubetics reccomendation)
 
-### Usage
+
+## Reccomended Usage
+Build the Dockerfile as an amd64 image for x86 usage (ARM is not currently supported upstream) [Dockerfile Example](https://github.com/ericbannon/qubetics-ubuntu22.04-validator-docker/blob/main/Dockerfile)
+
+## ✅ Prerequisites
+
+- Raspberry Pi 5 with Ubuntu 22.04 (Or other local Server)
+- 2TB NVMe SSD mounted at `/mnt/nvme`
+- Domain name (e.g., `node.validator-tics.com`) - (You need to have your own external Domain name and A record pointed to you public IP for your router and port forwarding enabled on server)
+- Port forwarding enabled on your router:
+  - TCP 26656 (P2P)
+  - TCP 26657 (RPC)
+  - TCP 443 (HTTPS)
+  - Optional: TCP 80 (redirect)
+  - Reverse Proxy on your server (Using Caddy)
+
+
+### Pre-setup Steps
 
 IMPORTANT: This assumes that you have mounted your desired storage partition as /mnt/nvme/ on your host system. If you have changed this, then your ubuntu setup script home directory will need to be changed accordingly.
 
-#### Mounting SSD Partition on your Host System
+### Mounting SSD Partition on your Host System
 
-##### Identify the SSD Disk
+#### Identify the SSD Disk
 
 ```
 lsblk
@@ -34,7 +48,7 @@ You should see something like:
 NAME         MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
 nvme0n1      259:0    0  1.8T  0 disk
 ```
-##### Create a Partition and Format the Drive
+#### Create a Partition and Format the Drive
 
 ```
 sudo fdisk /dev/nvme0n1
@@ -49,7 +63,7 @@ Format as ext4:
 ```
 sudo mkfs.ext4 /dev/nvme0n1p1
 ```
-##### Mount the Drive
+#### Mount the Drive
 ```
 sudo mount /dev/nvme0n1p1 /mnt/nvme
 ```
@@ -57,7 +71,7 @@ Check if mounted:
 ```
 df -h
 ```
-##### Auto-mount on Boot
+#### Auto-mount on Boot
 
 Get the UUID:
 ```
@@ -80,10 +94,39 @@ sudo mount -a
 ```
 Your drive is now mounted at /mnt/nvme and will stay mounted after reboot.
 
-* You are running a background Docker container with the Qubetics configurations installed. 
-* Notice that you are mounting the DAEMON_HOME as your new data directory for where the blockchain will be managed. 
-* You are giving the docker container access to the host filesystem in privilieged mode
-* The container will not restart unless stopped to provide continuity and avoid uneccessary reboots
+## 🔐 4. Setup Caddy (HTTPS Reverse Proxy)
+
+Inside your server running Ubuntu, install:
+
+```bash
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+sudo apt install caddy
+```
+
+Create `/etc/caddy/Caddyfile`: (using your own provided Hostname below)
+
+```caddyfile
+node.validator-tics.com {
+    reverse_proxy localhost:26657
+}
+```
+
+Fix permissions:
+
+```bash
+sudo mkdir -p /var/log/caddy
+sudo chown -R caddy:caddy /var/log/caddy
+```
+
+Validate and start:
+
+```bash
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl restart caddy
+```
 
 #### Run the Docker Container in the Background
 
@@ -121,6 +164,11 @@ docker run -dit \
   -e DAEMON_LOG_BUFFER_SIZE=512 \
   bannimal/tics-validator-node:latest
 ```
+
+* You are running a background Docker container with the Qubetics configurations installed. 
+* Notice that you are mounting the DAEMON_HOME as your new data directory for where the blockchain will be managed. 
+* You are giving the docker container access to the host filesystem in privilieged mode
+* The container will not restart unless stopped to provide continuity and avoid uneccessary reboots
 
 #### Install Qubetics Validator Node
 
