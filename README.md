@@ -20,9 +20,9 @@ Build the Dockerfile as an amd64 image for x86 usage (ARM is not currently suppo
 
 IMPORTANT: This assumes that you have mounted your desired storage partition as /mnt/nvme/ on your host system. If you have changed this, then your ubuntu setup script home directory will need to be changed accordingly.
 
-#### Mounting SSD partition on your host system
+#### Mounting SSD Partition on your Host System
 
-##### Identify the SSD disk
+##### Identify the SSD Disk
 
 ```
 lsblk
@@ -33,7 +33,7 @@ You should see something like:
 NAME         MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
 nvme0n1      259:0    0  1.8T  0 disk
 ```
-##### Create a partition and format the drive
+##### Create a Partition and Format the Drive
 
 ```
 sudo fdisk /dev/nvme0n1
@@ -48,7 +48,7 @@ Format as ext4:
 ```
 sudo mkfs.ext4 /dev/nvme0n1p1
 ```
-##### Mount the drive
+##### Mount the Drive
 ```
 sudo mount /dev/nvme0n1p1 /mnt/nvme
 ```
@@ -84,7 +84,7 @@ Your drive is now mounted at /mnt/nvme and will stay mounted after reboot.
 * You are giving the docker container access to the host filesystem in privilieged mode
 * The container will not restart unless stopped to provide continuity and avoid uneccessary reboots
 
-#### Run the Docker Container in the background"
+#### Run the Docker Container in the Background
 
 If running on an ARM based system:
 
