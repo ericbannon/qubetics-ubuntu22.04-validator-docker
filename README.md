@@ -4,7 +4,7 @@
 This is a working example of a Docker image that leverages Ubuntu 22.04 to run the Qubetics Mainnet Validator Node on any cloud environment, or hardware. 
 
 ## Reccomended Usage
-Build the Dockerfile as an amd64 image for x86 usage (ARM is not currently supported upstream https://[Dockerfile Example](https://github.com/ericbannon/qubetics-ubuntu22.04-validator-docker/blob/main/Dockerfile)
+Build the Dockerfile as an amd64 image for x86 usage (ARM is not currently supported upstream) [Dockerfile Example](https://github.com/ericbannon/qubetics-ubuntu22.04-validator-docker/blob/main/Dockerfile)
 
 ### Key notes
 
@@ -122,7 +122,9 @@ If already running on x86 platform:
 
 #### Install Qubetics Validator Node
 
+```
 bash -x qubetics_ubuntu_node.sh
+```
 
 Enter in your node details and proceed to make note of any of the outpout - mnemonics & Node information
 
