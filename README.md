@@ -33,12 +33,9 @@ Build the Dockerfile as an amd64 image for x86 usage (ARM is not currently suppo
   - Optional: TCP 80 (redirect)
   - Reverse Proxy on your server (Using Caddy)
 
-
-### Pre-setup Steps
-
 IMPORTANT: This assumes that you have mounted your desired storage partition as /mnt/nvme/ on your host system. If you have changed this, then your ubuntu setup script home directory will need to be changed accordingly.
 
-### Mounting SSD Partition
+## Mounting SSD Partition
 
 #### Identify the SSD Disk
 
@@ -97,7 +94,7 @@ sudo mount -a
 ```
 Your drive is now mounted at /mnt/nvme and will stay mounted after reboot.
 
-### Publically Expose Your Local Host
+## Publically Expose Your Local Host
 
 In order to add your validator node to the Qubetics system, you must have a public hostname/IP address that can communicate over https or wss. The following example uses Caddy, but Nginx can also be used if preferred.
 
@@ -135,7 +132,7 @@ sudo caddy validate --config /etc/caddy/Caddyfile
 sudo systemctl restart caddy
 ```
 
-#### Docker Steps & Node Installation
+## Docker Steps & Node Installation
 
 * Runs a background Docker container with the Qubetics configurations installed. 
 * Mounts the DAEMON_HOME as your new data directory for where the blockchain will be managed. 
@@ -145,7 +142,7 @@ sudo systemctl restart caddy
 - Once block 175000 is reached, it switches to the upgrade binary in:
 /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin/qubeticsd
 
-##### Run the Docker Container in the Background
+#### Run the Docker Container in the Background
 
 If running on an ARM based system:
 
@@ -182,7 +179,7 @@ docker run -dit \
   bannimal/tics-validator-node:latest
 ``` 
 
-##### Install Qubetics Validator Node
+#### Install Qubetics Validator Node
 
 ```
 bash -x qubetics_ubuntu_node.sh
@@ -190,11 +187,11 @@ bash -x qubetics_ubuntu_node.sh
 
 Enter in your node details and proceed to make note of any of the outpout - mnemonics & Node information
 
-### Concluding Notes 
+## Concluding Notes 
 
 Since you have started the Docker container in the background using the "-d" flag, you can dafely exit the running container and the qubeticsd service will continue to run.
 
-### Viewing logs & Troubleshooting
+## Viewing logs & Troubleshooting
 
 To view live logs for cosmovisor and your validator node you can run the following:
 
@@ -209,7 +206,7 @@ tail -f /mnt/nvme/qubetics/cosmovisor.log
 * See Utilities for misc scripts that may help once you have your node running
 
 
-### Useful commands to retrive Node Info
+## Useful commands to retrive Node Info
 
 #### Get Tendermint Validator Public Key
 
