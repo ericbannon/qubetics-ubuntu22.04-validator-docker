@@ -59,7 +59,6 @@ RUN mkdir -p /mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin && \
     curl -L $UPGRADE_URL -o /mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd && \
     chmod +x /mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd
 
-
 # Install COSMOVISOR 1.5.0 
 
 RUN go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@v${COSMOVER} && \
