@@ -52,7 +52,8 @@ RUN rm -rf /opt/qubetics && \
     mv /opt/qubetics/ubuntu22.04build/qubeticsd /usr/local/bin && \
     chmod +x /usr/local/bin/qubeticsd && \
     chmod +x /opt/qubetics/qubetics_ubuntu_node.sh && \
-    chmod +x /opt/qubetics/misc-utilities/*
+    chmod +x /opt/qubetics/misc-utilities/* && \
+    chmod +x /opt/qubetics/host-utilities/*
 
 # Download upgrade binary and place it in the upgrade slot
 RUN mkdir -p /mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin && \

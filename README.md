@@ -1,9 +1,11 @@
 # qubetics-ubuntu22.04-validator-docker
 
 ## Description
-This is a working example of a Docker image that leverages Ubuntu 22.04 to run the Qubetics Mainnet Validator Node on any cloud environment, or hardware. 
+This is a working example of a Dockerized deployment that leverages Ubuntu 22.04 to run the Qubetics Mainnet Validator Node on any cloud environment, or hardware. 
 
-Note: Feel free to build you own docker image and tag it however you want, or use the one I am going to be maintaing across versions documented in these docs. 
+If you want to save yourself time and use some server utilities for setting up things quick on your host server, clone this repo to your host you are using for validation before proceeding and take a look at the folder host-utilities.
+
+I will continue to pull from the upstream fork and make modifications to this repo to ensure validator-node enhancements continue to work in a Dockerized configuration and continual upgrades as they are released
 
 ### Key notes
 
@@ -15,11 +17,17 @@ Note: Feel free to build you own docker image and tag it however you want, or us
 * Can be run as amd64 on any ARM system (eg. raspberry pi 5) with qemu emulation enabled
 * Creates a cosmovisor.log for viewing the block indexing in the background and to troubleshoot errors
 * Setup script sets fase fees to .01tics for best network performance (Per Qubetics reccomendation)
-* Upgrade script removed in place of direct download of new versions in Dockerfile. Image tags will be updated accordingly
-
+* Reboot systemd service for auto-start and upgrades 
+* Additional scripts added for fast_sync to snapshotter 
 
 ## Reccomended Usage
-Build the Dockerfile as an amd64 image for x86 usage (ARM is not currently supported upstream) [Dockerfile Example](https://github.com/ericbannon/qubetics-ubuntu22.04-validator-docker/blob/main/Dockerfile)
+
+**OPTION 1** (Reccomended)
+Use the existing Docker image I will be maintaining across releases of the mainnet
+
+**OPTION 2**
+Build your own docker image as an amd64 image for x86 usage (ARM is not currently supported upstream) [Dockerfile Example](https://github.com/ericbannon/qubetics-ubuntu22.04-validator-docker/blob/main/Dockerfile)
+
 
 ## ✅ Prerequisites
 
@@ -33,7 +41,7 @@ Build the Dockerfile as an amd64 image for x86 usage (ARM is not currently suppo
   - Optional: TCP 80 (redirect)
   - Reverse Proxy on your server (Using Caddy)
 
-IMPORTANT: This assumes that you have mounted your desired storage partition as /mnt/nvme/ on your host system. If you have changed this, then your ubuntu setup script home directory will need to be changed accordingly.
+**IMPORTANT**: This assumes that you have mounted your desired storage partition as /mnt/nvme/ on your host system. If you have changed this, then your ubuntu setup script home directory will need to be changed accordingly.
 
 ## Mounting SSD Partition
 
@@ -179,6 +187,18 @@ docker run -dit \
   bannimal/tics-validator-node:latest
 ``` 
 
+**IMPORTANT** - If you completed remove the docker container from the node, you will need to specify the backup directory when re-running your docker run command for the new container. You can do this by adding the following env variable to your docker run command:
+
+```
+ -e DAEMON_DATA_BACKUP_DIR=/mnt/nvme/qubetics/data-backup-2025-7-27 \
+  bannimal/tics-validator-node:v1.0.1
+```
+
+The backup directory will have this structure depending on the day you rm the container:
+
+i.e. data-backup-2025-<month>-<day> (see above)
+
+
 #### Install Qubetics Validator Node
 
 ```
@@ -199,27 +219,50 @@ To view live logs for cosmovisor and your validator node you can run the followi
 tail -f /mnt/nvme/qubetics/cosmovisor.log
 ```
 
-* Additional scripts added for fast_sync to snapshotter 
-
-* I will continue to pull from the upstream fork and make modifications to this repo to ensure validator-node enhancements continue to work in a Dockerized configuration and continual upgrades as they are released
-
-* See Utilities for misc scripts that may help once you have your node running
-
-
 ## Useful commands to retrive Node Info
 
 #### Get Tendermint Validator Public Key
-
 ```
 $DAEMON_NAME tendermint show-validator --home $DAEMON_HOME
 ```
-
 #### Get Node ID
 ```
 $DAEMON_NAME tendermint show-node-id --home $DAEMON_HOME
 ```
-
 #### Get Bech32 Wallet Address 
 ```
 $DAEMON_NAME keys show $KEYS --keyring-backend $KEYRING --home $DAEMON_HOME -a
 ```
+
+## Useful Host Utilities
+
+### Auto-boot Disaster Recovery & Auto-Upgrade Rebuilds
+
+#### autoexec-docker.sh
+✅ Starts your Docker container on reboot
+✅ Starts Cosmovisor with retries
+✅ Checks for both fatal errors and successful block execution
+✅ Tails the logs to confirm re-syncing is healthy 
+
+Note: include the startup-logs.sh script in your bash_profile to tail the output of the reboot script for success and failures upon SSH after reboot
+
+#### validator-reboot.service
+✅ A systemd service to auto-launch the reboot-starts.sh script
+
+```
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl enable validator-reboot.service
+sudo systemctl start validator-reboot.service
+``` 
+
+### Other Utilities
+#### remount.sh
+✅ Unmounts disk, removes files, and remounts your SSD partition
+
+#### setup_rpi5_fan.sh (If using an RP5)
+✅ Ubuntu does not include the RPI5 fan configurations by default 
+✅ Installes the needed configurations for Ubuntu
+
+#### network-speed-test
+✅ Runs a quick utility container to check your network speed on your validator node

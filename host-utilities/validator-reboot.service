@@ -1,0 +1,15 @@
+[Unit]
+Description=Start validator node with Cosmovisor on boot
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/home/admin/autoexec-docker.sh
+WorkingDirectory=/home/admin
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
