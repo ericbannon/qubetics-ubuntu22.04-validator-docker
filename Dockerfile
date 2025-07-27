@@ -9,8 +9,8 @@ LABEL maintainer="Eric Bannon - GitHub: ericbannon" \
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Set environment variables if needed
-ENV DAEMON_NAME=qubeticsd
-ENV DAEMON_HOME=/mnt/nvme/qubetics
+# ENV DAEMON_NAME=qubeticsd
+# ENV DAEMON_HOME=/mnt/nvme/qubetics
 
 RUN apt-get update && \
     apt-get install -y \
@@ -46,15 +46,13 @@ RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
 
 RUN git clone https://github.com/ericbannon/qubetics-ubuntu22.04-validator-docker.git /opt/qubetics && \
     chmod +x /opt/qubetics/qubetics_ubuntu_node.sh && \
-    chmod +x misc-utilities/*
+    chmod +x /opt/qubetics/misc-utilities/*
 
 # Download upgrade binary (v1.0.1) and place it in the upgrade slot
-ARG UBUNTU_VERSION=22.04
-ENV UPGRADE_URL=https://github.com/Qubetics/qubetics-mainnet-upgrade/releases/download/ubuntu${UBUNTU_VERSION}/qubeticsd
+ENV UPGRADE_URL=https://github.com/Qubetics/qubetics-mainnet-upgrade/releases/download/ubuntu22.04/qubeticsd
 
-RUN mkdir -p /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin && \
-    curl -L $UPGRADE_URL -o /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin/qubeticsd && \
-    chmod +x /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin/qubeticsd
+RUN mkdir /opt/qubetics/upgrades && \   
+    curl -L $UPGRADE_URL -o /opt/qubetics/upgrades/qubeticsd
 
 # Install COSMOVISOR 1.5.0 
 
