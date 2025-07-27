@@ -7,6 +7,8 @@ LABEL maintainer="Eric Bannon - GitHub: ericbannon" \
 # Install Qubetics node prerequisites 
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV UPGRADE_URL=https://github.com/Qubetics/qubetics-mainnet-upgrade/releases/download/ubuntu22.04/qubeticsd
+ENV COSMOVER=1.5.0
 
 # Set environment variables if needed
 # ENV DAEMON_NAME=qubeticsd
@@ -49,8 +51,6 @@ RUN git clone https://github.com/ericbannon/qubetics-ubuntu22.04-validator-docke
     chmod +x /opt/qubetics/misc-utilities/*
 
 # Download upgrade binary (v1.0.1) and place it in the upgrade slot
-ENV UPGRADE_URL=https://github.com/Qubetics/qubetics-mainnet-upgrade/releases/download/ubuntu22.04/qubeticsd
-
 RUN mkdir /opt/qubetics/upgrades && \   
     curl -L $UPGRADE_URL -o /opt/qubetics/upgrades/qubeticsd
 
