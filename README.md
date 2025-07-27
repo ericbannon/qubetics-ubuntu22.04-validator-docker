@@ -3,6 +3,8 @@
 ## Description
 This is a working example of a Docker image that leverages Ubuntu 22.04 to run the Qubetics Mainnet Validator Node on any cloud environment, or hardware. 
 
+Note: Feel free to build you own docker image and tag it however you want, or use the one I am going to be maintaing across versions documented in these docs. 
+
 ### Key notes
 
 * Installs Go 1.22.4 which coscmovisor@v1.5.0 relies on
@@ -12,7 +14,8 @@ This is a working example of a Docker image that leverages Ubuntu 22.04 to run t
 * Modifies the qubetics_ubuntu_node.sh script to start the qubeticsd directly from cosmovisor since systemctl is not supported in Docker
 * Can be run as amd64 on any ARM system (eg. raspberry pi 5) with qemu emulation enabled
 * Creates a cosmovisor.log for viewing the block indexing in the background and to troubleshoot errors
-* setup script sets fase fees to .01tics for best network performance (Per Qubetics reccomendation)
+* Setup script sets fase fees to .01tics for best network performance (Per Qubetics reccomendation)
+* Upgrade script removed in place of direct download of new versions in Dockerfile. Image tags will be updated accordingly
 
 
 ## Reccomended Usage
@@ -35,7 +38,7 @@ Build the Dockerfile as an amd64 image for x86 usage (ARM is not currently suppo
 
 IMPORTANT: This assumes that you have mounted your desired storage partition as /mnt/nvme/ on your host system. If you have changed this, then your ubuntu setup script home directory will need to be changed accordingly.
 
-### Mounting SSD Partition on your Host System
+### Mounting SSD Partition
 
 #### Identify the SSD Disk
 
@@ -94,7 +97,11 @@ sudo mount -a
 ```
 Your drive is now mounted at /mnt/nvme and will stay mounted after reboot.
 
-## 🔐 4. Setup Caddy (HTTPS Reverse Proxy)
+### Publically Expose Your Local Host
+
+In order to add your validator node to the Qubetics system, you must have a public hostname/IP address that can communicate over https or wss. The following example uses Caddy, but Nginx can also be used if preferred.
+
+#### 🔐 4. Setup Caddy (HTTPS Reverse Proxy)
 
 Inside your server running Ubuntu, install:
 
@@ -128,7 +135,17 @@ sudo caddy validate --config /etc/caddy/Caddyfile
 sudo systemctl restart caddy
 ```
 
-#### Run the Docker Container in the Background
+#### Docker Steps & Node Installation
+
+* Runs a background Docker container with the Qubetics configurations installed. 
+* Mounts the DAEMON_HOME as your new data directory for where the blockchain will be managed. 
+* Docker container has access to the host filesystem in privilieged mode
+* Since you have downloaded the upgraded versions directly in the Docker image:
+- Cosmovisor uses /mnt/nvme/qubetics/cosmovisor/genesis/bin/qubeticsd initially
+- Once block 175000 is reached, it switches to the upgrade binary in:
+/mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin/qubeticsd
+
+##### Run the Docker Container in the Background
 
 If running on an ARM based system:
 
@@ -163,14 +180,9 @@ docker run -dit \
   -e DAEMON_RESTART_AFTER_UPGRADE=true \
   -e DAEMON_LOG_BUFFER_SIZE=512 \
   bannimal/tics-validator-node:latest
-```
+``` 
 
-* You are running a background Docker container with the Qubetics configurations installed. 
-* Notice that you are mounting the DAEMON_HOME as your new data directory for where the blockchain will be managed. 
-* You are giving the docker container access to the host filesystem in privilieged mode
-* The container will not restart unless stopped to provide continuity and avoid uneccessary reboots
-
-#### Install Qubetics Validator Node
+##### Install Qubetics Validator Node
 
 ```
 bash -x qubetics_ubuntu_node.sh
@@ -190,9 +202,11 @@ To view live logs for cosmovisor and your validator node you can run the followi
 tail -f /mnt/nvme/qubetics/cosmovisor.log
 ```
 
-* Additional scripts added for fast_sync to snapshotter & node upgrade scripts.
+* Additional scripts added for fast_sync to snapshotter 
 
-* I will continue to pull from the upstream fork and make modifications to this repo to ensure validator-node enhancements continue to work in a Dockerized configuration
+* I will continue to pull from the upstream fork and make modifications to this repo to ensure validator-node enhancements continue to work in a Dockerized configuration and continual upgrades as they are released
+
+* See Utilities for misc scripts that may help once you have your node running
 
 
 ### Useful commands to retrive Node Info
