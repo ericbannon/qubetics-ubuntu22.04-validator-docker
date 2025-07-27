@@ -41,3 +41,5 @@ echo_status "Deleting /mnt/nvme/qubetics..."
 sudo rm -rf /mnt/nvme/qubetics
 
 echo_status "Cleanup completed."
+sudo mount /dev/nvme0n1p1 /mnt/nvme
+echo "nvme remounted"
