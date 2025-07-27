@@ -9,6 +9,7 @@ LABEL maintainer="Eric Bannon - GitHub: ericbannon" \
 ENV DEBIAN_FRONTEND=noninteractive
 ENV UPGRADE_URL=https://github.com/Qubetics/qubetics-mainnet-upgrade/releases/download/ubuntu22.04/qubeticsd
 ENV COSMOVER=1.5.0
+ENV UPGRADEVER=v1.0.1
 
 # Set environment variables if needed
 # ENV DAEMON_NAME=qubeticsd
@@ -53,14 +54,14 @@ RUN rm -rf /opt/qubetics && \
     chmod +x /opt/qubetics/qubetics_ubuntu_node.sh && \
     chmod +x /opt/qubetics/misc-utilities/*
 
-# Download upgrade binary (v1.0.1) and place it in the upgrade slot
-RUN mkdir -p /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin && \
-    mv /opt/qubetics/upgrades/qubeticsd /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin && \
-    chmod +x /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin/qubeticsd && \
-    curl -L $UPGRADE_URL -o /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin/qubeticsd
+# Download upgrade binary and place it in the upgrade slot
+RUN mkdir -p /mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin && \
+    curl -L $UPGRADE_URL -o /mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd && \
+    chmod +x /mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd
+
 
 # Install COSMOVISOR 1.5.0 
 
-RUN go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@v1.5.0 && \
+RUN go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@v${COSMOVER} && \
     mv /go/bin/cosmovisor /usr/local/bin/ && \
     chmod +x /usr/local/bin/cosmovisor
