@@ -46,13 +46,18 @@ RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
 
 # Download Node Validtor Scripts
 
-RUN git clone https://github.com/ericbannon/qubetics-ubuntu22.04-validator-docker.git /opt/qubetics && \
+RUN rm -rf /opt/qubetics && \
+    git clone https://github.com/ericbannon/qubetics-ubuntu22.04-validator-docker.git /opt/qubetics && \
+    mv /opt/qubetics/ubuntu22.04build/qubeticsd /usr/local/bin && \
+    chmod +x /usr/local/bin/qubeticsd && \
     chmod +x /opt/qubetics/qubetics_ubuntu_node.sh && \
     chmod +x /opt/qubetics/misc-utilities/*
 
 # Download upgrade binary (v1.0.1) and place it in the upgrade slot
-RUN mkdir /opt/qubetics/upgrades && \   
-    curl -L $UPGRADE_URL -o /opt/qubetics/upgrades/qubeticsd
+RUN mkdir -p /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin && \
+    mv /opt/qubetics/upgrades/qubeticsd /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin && \
+    chmod +x /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin/qubeticsd && \
+    curl -L $UPGRADE_URL -o /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin/qubeticsd
 
 # Install COSMOVISOR 1.5.0 
 
