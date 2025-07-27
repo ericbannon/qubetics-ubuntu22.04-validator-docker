@@ -187,7 +187,7 @@ docker run -dit \
   bannimal/tics-validator-node:latest
 ``` 
 
-**IMPORTANT** - If you completed remove the docker container from the node, you will need to specify the backup directory when re-running your docker run command for the new container. You can do this by adding the following env variable to your docker run command:
+**IMPORTANT** - If you completely remove the docker container from the node, you will need to specify the backup directory when re-running your docker run command for the new container. You can do this by adding the following env variable to your docker run command:
 
 ```
  -e DAEMON_DATA_BACKUP_DIR=/mnt/nvme/qubetics/data-backup-2025-7-27 \
@@ -196,7 +196,7 @@ docker run -dit \
 
 The backup directory will have this structure depending on the day you rm the container:
 
-i.e. data-backup-2025-<month>-<day> (see above)
+i.e. data-backup-2025-month-day (see above)
 
 
 #### Install Qubetics Validator Node
@@ -239,15 +239,15 @@ $DAEMON_NAME keys show $KEYS --keyring-backend $KEYRING --home $DAEMON_HOME -a
 ### Auto-boot Disaster Recovery & Auto-Upgrade Rebuilds
 
 #### autoexec-docker.sh
-✅ Starts your Docker container on reboot
-✅ Starts Cosmovisor with retries
-✅ Checks for both fatal errors and successful block execution
-✅ Tails the logs to confirm re-syncing is healthy 
+* ✅ Starts your Docker container on reboot
+* ✅ Starts Cosmovisor with retries
+* ✅ Checks for both fatal errors and successful block execution
+* ✅ Tails the logs to confirm re-syncing is healthy 
 
 Note: include the startup-logs.sh script in your bash_profile to tail the output of the reboot script for success and failures upon SSH after reboot
 
 #### validator-reboot.service
-✅ A systemd service to auto-launch the reboot-starts.sh script
+* ✅ A systemd service to auto-launch the reboot-starts.sh script
 
 ```
 sudo systemctl daemon-reexec
@@ -258,11 +258,11 @@ sudo systemctl start validator-reboot.service
 
 ### Other Utilities
 #### remount.sh
-✅ Unmounts disk, removes files, and remounts your SSD partition
+* ✅ Unmounts disk, removes files, and remounts your SSD partition
 
 #### setup_rpi5_fan.sh (If using an RP5)
-✅ Ubuntu does not include the RPI5 fan configurations by default 
-✅ Installes the needed configurations for Ubuntu
+* ✅ Ubuntu does not include the RPI5 fan configurations by default 
+* ✅ Installes the needed configurations for Ubuntu
 
 #### network-speed-test
-✅ Runs a quick utility container to check your network speed on your validator node
+* ✅ Runs a quick utility container to check your network speed on your validator node
