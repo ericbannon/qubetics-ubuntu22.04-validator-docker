@@ -1,15 +1,15 @@
-# qubetics-ubuntu22.04-validator-docker
+# qubetics-ubuntu22.04-validator-docker 📦
 
 ## Description
 This is a working example of a Dockerized deployment that leverages Ubuntu 22.04 to run the Qubetics Mainnet Validator Node on any cloud environment, or hardware. 
-
-If you want to save yourself time and use some server utilities for setting up things quick on your host server, clone this repo to your host you are using for validation before proceeding and take a look at the folder host-utilities.
 
 I will continue to pull from the upstream fork and make modifications to this repo to ensure validator-node enhancements continue to work in a Dockerized configuration and continual upgrades as they are released
 
 **Image Repository:** https://hub.docker.com/repository/docker/bannimal/tics-validator-node/general 
 
 The Docker Image will be updated with newer versions of qubeticsd and rebuilt with the same version tag. I.e. v1.0.2 will be next.
+
+📣 Join the conversation in [![Telegram]](https://t.me/qubetics)
 
 ### Key notes
 
@@ -54,7 +54,7 @@ Build your own docker image as an amd64 image for x86 usage (ARM is not currentl
 
 **IMPORTANT**: This assumes that you have mounted your desired storage partition as /mnt/nvme/ on your host system. If you have changed this, then your ubuntu setup script home directory will need to be changed accordingly.
 
-## Mounting SSD Partition
+## Mounting SSD Partition 🛠️
 
 #### Identify the SSD Disk
 
@@ -113,11 +113,11 @@ sudo mount -a
 ```
 Your drive is now mounted at /mnt/nvme and will stay mounted after reboot.
 
-## Publically Expose Your Local Host
+## Publically Expose Your Local Host 🛠️
 
 In order to add your validator node to the Qubetics system, you must have a public hostname/IP address that can communicate over https or wss. The following example uses Caddy, but Nginx can also be used if preferred.
 
-#### 🔐 4. Setup Caddy (HTTPS Reverse Proxy)
+#### 🔐 4. Setup Caddy (HTTPS Reverse Proxy) 🛠️
 
 Inside your server running Ubuntu, install:
 
@@ -151,7 +151,7 @@ sudo caddy validate --config /etc/caddy/Caddyfile
 sudo systemctl restart caddy
 ```
 
-## Docker Steps & Node Installation
+## Docker Steps & Node Installation 🚀
 
 Runs a background Docker container with the Qubetics configurations installed. 
 
@@ -163,7 +163,7 @@ Runs a background Docker container with the Qubetics configurations installed.
 Once block 175000 is reached, it switches to the upgrade binary in:
 /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin/qubeticsd
 
-#### Run the Docker Container in the Background
+#### Run the Docker Container in the Background 🧪
 
 If running on an ARM based system:
 
@@ -221,12 +221,20 @@ bash -x qubetics_ubuntu_node.sh
 
 Enter in your node details and proceed to make note of any of the outpout - mnemonics & Node information. Store somewhere safe and secure.
 
-# See Host-Utilities README.md
-Instructions on Auto-Upgrades and Safe Reboot in [Host Utilities README](./host-utilities/README.md)
+#### Useful commands to retrive Node Info
 
-## Concluding Notes 
-
-Since you have started the Docker container in the background using the "-d" flag, you can dafely exit the running container and the qubeticsd service will continue to run.
+##### Get Tendermint Validator Public Key
+```
+$DAEMON_NAME tendermint show-validator --home $DAEMON_HOME
+```
+##### Get Node ID
+```
+$DAEMON_NAME tendermint show-node-id --home $DAEMON_HOME
+```
+##### Get Bech32 Wallet Address 
+```
+$DAEMON_NAME keys show $KEYS --keyring-backend $KEYRING --home $DAEMON_HOME -a
+```
 
 ## Viewing logs & Troubleshooting
 
@@ -236,18 +244,15 @@ To view live logs for cosmovisor and your validator node you can run the followi
 tail -f /mnt/nvme/qubetics/cosmovisor.log
 ```
 
-## Useful commands to retrive Node Info
+# Concluding Notes 
 
-#### Get Tendermint Validator Public Key
-```
-$DAEMON_NAME tendermint show-validator --home $DAEMON_HOME
-```
-#### Get Node ID
-```
-$DAEMON_NAME tendermint show-node-id --home $DAEMON_HOME
-```
-#### Get Bech32 Wallet Address 
-```
-$DAEMON_NAME keys show $KEYS --keyring-backend $KEYRING --home $DAEMON_HOME -a
-```
+Since you have started the Docker container in the background using the "-d" flag, you can safely exit the running container and the qubeticsd service will continue to run.
+
+## See host-utilities README.md 🔧
+Instructions on Auto-Upgrades and Safe Reboot in [Host Utilities README](./host-utilities/README.md)
+
+## See validator-metrics README.md 📊
+Utilities for measuring block sync metrics and other performance metrics in [validator-metrics README](./validator-metrics/README.md)
+
+
 
