@@ -9,7 +9,7 @@ I will continue to pull from the upstream fork and make modifications to this re
 
 The Docker Image will be updated with newer versions of qubeticsd and rebuilt with the same version tag. I.e. v1.0.2 will be next.
 
-📣 Join the conversation in [![Telegram]](https://t.me/qubetics)
+📣 Join the conversation in [Telegram](https://t.me/qubetics)
 
 ### Key notes
 
