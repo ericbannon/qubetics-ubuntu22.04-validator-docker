@@ -236,7 +236,7 @@ $DAEMON_NAME tendermint show-node-id --home $DAEMON_HOME
 $DAEMON_NAME keys show $KEYS --keyring-backend $KEYRING --home $DAEMON_HOME -a
 ```
 
-## Viewing logs & Troubleshooting
+## Viewing logs & Troubleshooting 🔍
 
 To view live logs for cosmovisor and your validator node you can run the following:
 
