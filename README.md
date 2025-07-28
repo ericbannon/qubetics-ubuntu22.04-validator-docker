@@ -221,7 +221,8 @@ bash -x qubetics_ubuntu_node.sh
 
 Enter in your node details and proceed to make note of any of the outpout - mnemonics & Node information. Store somewhere safe and secure.
 
-# See Host-Utilities README.md -Instructions on Auto-Upgrades and Safe Reboot
+# See Host-Utilities README.md
+Instructions on Auto-Upgrades and Safe Reboot in [Host Utilities README](./host-utilities/README.md)
 
 ## Concluding Notes 
 
