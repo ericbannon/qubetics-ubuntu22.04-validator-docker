@@ -117,7 +117,7 @@ Your drive is now mounted at /mnt/nvme and will stay mounted after reboot.
 
 In order to add your validator node to the Qubetics system, you must have a public hostname/IP address that can communicate over https or wss. The following example uses Caddy, but Nginx can also be used if preferred.
 
-#### 🔐 4. Setup Caddy (HTTPS Reverse Proxy) 🛠️
+#### 🔐 4. Setup Caddy (HTTPS Reverse Proxy)
 
 Inside your server running Ubuntu, install:
 
