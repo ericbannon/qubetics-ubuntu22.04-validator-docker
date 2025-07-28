@@ -279,7 +279,7 @@ sudo systemctl start validator-reboot.service
 ### Optional Configuration: set-cpu-performance
 *  ✅ Configures performance for all cores on your host system
 
-Create a systemd service:
+##### Create a systemd service:
 ```
 sudo nano /etc/systemd/system/cpugov.service --> 
 
@@ -297,7 +297,7 @@ WantedBy=multi-user.target
 
 ```
 
-Create an execution script
+##### Create an execution script
 ```
 sudo nano /usr/local/bin/set-cpu-performance.sh
 ```
@@ -313,8 +313,8 @@ done
 sudo chmod +x /usr/local/bin/set-cpu-performance.sh
 ```
 
-Create udev performance rules to make sure it stays on reboot
-``
+##### Create udev performance rules to make sure it stays on reboot
+```
 sudo nano /etc/udev/rules.d/99-cpufreq-performance.rules
 ```
 
@@ -327,13 +327,13 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger --subsystem-match=cpu
 ```
 
-Mask ondemand so it disables on reboot
+##### Mask ondemand so it disables on reboot
 
 ```
 sudo systemctl mask ondemand
 ```
 
-Enable and start the service:
+##### Enable and start the service:
 
 ```
 sudo systemctl daemon-reexec
