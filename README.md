@@ -20,15 +20,6 @@ I will continue to pull from the upstream fork and make modifications to this re
 * Reboot systemd service for auto-start and upgrades 
 * Additional scripts added for fast_sync to snapshotter 
 
-## Prerequisites
-
-### System Requirements
-* Operating System: Ubuntu 22.04
-* Memory: At least 16GB RAM
-* Storage: Minimum 500GB available disk space
-* CPU: 8-core minimum
-* Network: Stable internet connection
-
 ## Reccomended Usage
 
 **OPTION 1** (Reccomended)
@@ -39,9 +30,16 @@ Build your own docker image as an amd64 image for x86 usage (ARM is not currentl
 
 
 ## ✅ Prerequisites
+### System Requirements
 
-- Raspberry Pi 5 with Ubuntu 22.04 (Or other local Server)
-- 2TB NVMe SSD mounted at `/mnt/nvme`
+* Memory: At least 16GB RAM
+* Storage: Minimum 500GB available disk space (SSD)
+* CPU: 8-core minimum
+* Network: Stable internet connection
+
+### Node configuraton requirements
+
+- SSD mounted at `/mnt/nvme`
 - Domain name (e.g., `node.validator-tics.com`) - (You need to have your own external Domain name and A record pointed to you public IP for your router and port forwarding enabled on server)
 - Port forwarding enabled on your router:
   - TCP 26656 (P2P)
@@ -196,32 +194,26 @@ docker run -dit \
   bannimal/tics-validator-node:latest
 ``` 
 
-**IMPORTANT** - If you completely remove the docker container from the node, you will need to specify the backup directory when re-running your docker run command for the new container. You can do this by adding the following env variable to your docker run command:
+**IMPORTANT** - If you completely remove the docker container from the node, you will need to specify the backup directory when re-running your docker run command for the new container. You can do this by adding the following env variable to your docker run command (replace with current month and day)
 
 ```
  -e DAEMON_DATA_BACKUP_DIR=/mnt/nvme/qubetics/data-backup-2025-7-27 \
   bannimal/tics-validator-node:v1.0.1
 ```
 
-The backup directory will have this structure depending on the day you rm the container:
-
-i.e. data-backup-2025-month-day (see above)
-
-If you want the docker container to have system access to all CPUs and RAM, please include the following in your run command:"
+**Reccomended** If you are running an independent node for the purpose of validation and want the docker container to have system access to all CPUs and RAM, please include the following in your run command:
 
 ```
     -cpus="$(nproc)" \
     --memory="0" \
 ```
 
-
 #### Install Qubetics Validator Node
-
 ```
 bash -x qubetics_ubuntu_node.sh
 ```
 
-Enter in your node details and proceed to make note of any of the outpout - mnemonics & Node information
+Enter in your node details and proceed to make note of any of the outpout - mnemonics & Node information. Store somewhere safe and secure.
 
 ## Concluding Notes 
 

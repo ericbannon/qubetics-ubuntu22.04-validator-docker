@@ -75,34 +75,46 @@ for ((j=1; j<=START_RETRIES; j++)); do
 
   sleep 5
 
+echo "📦 Attempting to start Cosmovisor with retry on DB lock..."
+
+START_RETRIES=10
+SLEEP_INTERVAL=10
+COSMOVISOR_STARTED=false
+
+for ((j=1; j<=START_RETRIES; j++)); do
+  echo "⏳ Attempt #$j: Starting Cosmovisor..."
+
+  docker exec "$CONTAINER_NAME" bash -c "
+    nohup cosmovisor run start \
+      --home \"$DAEMON_HOME\" \
+      --json-rpc.api eth,txpool,personal,net,debug,web3 \
+      >> \"$DAEMON_HOME/cosmovisor.log\" 2>&1 &
+  "
+
+  sleep 5
   echo "⏳ Checking Cosmovisor log for block height messages..."
 
-  CHECK_RETRIES=20
-  BLOCK_FOUND=false
-
+  CHECK_RETRIES=25
   for ((k=1; k<=CHECK_RETRIES; k++)); do
     if docker exec "$CONTAINER_NAME" grep -q 'executed block height=' "$DAEMON_HOME/cosmovisor.log"; then
       echo "✅ Cosmovisor is syncing blocks. Startup successful."
-      BLOCK_FOUND=true
-      break
+      COSMOVISOR_STARTED=true
+      break 2  # ⬅️ Exits both the inner (k) and outer (j) loops
     fi
 
     echo "⏳ Still waiting for block sync... ($k/$CHECK_RETRIES)"
     sleep "$SLEEP_INTERVAL"
   done
 
-  if [ "$BLOCK_FOUND" = true ]; then
-    break
-  else
-    echo "⚠️ Cosmovisor did not show block execution after $CHECK_RETRIES attempts."
-  fi
+  echo "⚠️ Cosmovisor did not show block execution after $CHECK_RETRIES attempts."
 done
 
-if [ "$BLOCK_FOUND" = false ]; then
-  echo "❌ All Cosmovisor startup attempts failed to detect block execution."
+if [ "$COSMOVISOR_STARTED" != true ]; then
+  echo "❌ Cosmovisor startup failed after $START_RETRIES attempts."
   docker exec "$CONTAINER_NAME" tail -n 100 "$DAEMON_HOME/cosmovisor.log"
   exit 1
 fi
+
 # ✅ Tail logs
 echo "📜 Tailing Cosmovisor log..."
 docker exec -i "$CONTAINER_NAME" tail -n 50 -f "$DAEMON_HOME/cosmovisor.log"
