@@ -62,23 +62,6 @@ echo "📦 Attempting to start Cosmovisor with retry on DB lock..."
 
 START_RETRIES=10
 SLEEP_INTERVAL=10
-
-for ((j=1; j<=START_RETRIES; j++)); do
-  echo "⏳ Attempt #$j: Starting Cosmovisor..."
-
-  docker exec "$CONTAINER_NAME" bash -c "
-    nohup cosmovisor run start \
-      --home \"$DAEMON_HOME\" \
-      --json-rpc.api eth,txpool,personal,net,debug,web3 \
-      >> \"$DAEMON_HOME/cosmovisor.log\" 2>&1 &
-  "
-
-  sleep 5
-
-echo "📦 Attempting to start Cosmovisor with retry on DB lock..."
-
-START_RETRIES=10
-SLEEP_INTERVAL=10
 COSMOVISOR_STARTED=false
 
 for ((j=1; j<=START_RETRIES; j++)); do
@@ -96,10 +79,10 @@ for ((j=1; j<=START_RETRIES; j++)); do
 
   CHECK_RETRIES=25
   for ((k=1; k<=CHECK_RETRIES; k++)); do
-    if docker exec "$CONTAINER_NAME" grep -q 'executed block height=' "$DAEMON_HOME/cosmovisor.log"; then
+    if docker exec "$CONTAINER_NAME" bash -c "tail -n 100 '$DAEMON_HOME/cosmovisor.log' | grep -q 'executed block height='"; then
       echo "✅ Cosmovisor is syncing blocks. Startup successful."
       COSMOVISOR_STARTED=true
-      break 2  # ⬅️ Exits both the inner (k) and outer (j) loops
+      break 2
     fi
 
     echo "⏳ Still waiting for block sync... ($k/$CHECK_RETRIES)"
