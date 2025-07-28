@@ -7,6 +7,10 @@ If you want to save yourself time and use some server utilities for setting up t
 
 I will continue to pull from the upstream fork and make modifications to this repo to ensure validator-node enhancements continue to work in a Dockerized configuration and continual upgrades as they are released
 
+**Image Repository:** https://hub.docker.com/repository/docker/bannimal/tics-validator-node/general 
+
+The Docker Image will be updated with newer versions of qubeticsd and rebuilt with the same version tag. I.e. v1.0.2 will be next.
+
 ### Key notes
 
 * Installs Go 1.22.4 which coscmovisor@v1.5.0 relies on
@@ -149,12 +153,14 @@ sudo systemctl restart caddy
 
 ## Docker Steps & Node Installation
 
-* Runs a background Docker container with the Qubetics configurations installed. 
+Runs a background Docker container with the Qubetics configurations installed. 
+
 * Mounts the DAEMON_HOME as your new data directory for where the blockchain will be managed. 
 * Docker container has access to the host filesystem in privilieged mode
 * Since you have downloaded the upgraded versions directly in the Docker image:
-- Cosmovisor uses /mnt/nvme/qubetics/cosmovisor/genesis/bin/qubeticsd initially
-- Once block 175000 is reached, it switches to the upgrade binary in:
+* Cosmovisor uses /mnt/nvme/qubetics/cosmovisor/genesis/bin/qubeticsd initially
+
+Once block 175000 is reached, it switches to the upgrade binary in:
 /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin/qubeticsd
 
 #### Run the Docker Container in the Background
