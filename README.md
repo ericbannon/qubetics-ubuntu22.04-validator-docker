@@ -20,6 +20,15 @@ I will continue to pull from the upstream fork and make modifications to this re
 * Reboot systemd service for auto-start and upgrades 
 * Additional scripts added for fast_sync to snapshotter 
 
+## Prerequisites
+
+### System Requirements
+* Operating System: Ubuntu 22.04
+* Memory: At least 16GB RAM
+* Storage: Minimum 500GB available disk space
+* CPU: 8-core minimum
+* Network: Stable internet connection
+
 ## Reccomended Usage
 
 **OPTION 1** (Reccomended)
@@ -197,6 +206,13 @@ docker run -dit \
 The backup directory will have this structure depending on the day you rm the container:
 
 i.e. data-backup-2025-month-day (see above)
+
+If you want the docker container to have system access to all CPUs and RAM, please include the following in your run command:"
+
+```
+    -cpus="$(nproc)" \
+    --memory="0" \
+```
 
 
 #### Install Qubetics Validator Node

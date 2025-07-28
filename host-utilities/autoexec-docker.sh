@@ -29,6 +29,8 @@ if ! docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
     --name "$CONTAINER_NAME" \
     --privileged \
     --network host \
+    --cpus="$(nproc)" \
+    --memory="0" \
     --restart unless-stopped \
     -v /mnt/nvme:/mnt/nvme \
     -e DAEMON_NAME=qubeticsd \
@@ -36,6 +38,7 @@ if ! docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
     -e DAEMON_ALLOW_DOWNLOAD_BINARIES=false \
     -e DAEMON_RESTART_AFTER_UPGRADE=true \
     -e DAEMON_LOG_BUFFER_SIZE=512 \
+    -e DAEMON_DATA_BACKUP_DIR="$DAEMON_HOME/data-backup-2025-7-27" \
     "$VALIDATOR_IMAGE"
 fi
 
@@ -51,7 +54,7 @@ if [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)" !
     exit 1
   fi
 else
-  echo "✅ Container '$CONTAINER_NAME' is already running."
+  echo "✅ Container '$CONTAINER_NAME' is running."
 fi
 
 # ✅ Start Cosmovisor with retry logic
@@ -72,27 +75,36 @@ for ((j=1; j<=START_RETRIES; j++)); do
 
   sleep 5
 
- echo "⏳ Checking Cosmovisor log for block height messages..."
+  echo "⏳ Checking Cosmovisor log for block height messages..."
 
-CHECK_RETRIES=20
-for ((k=1; k<=CHECK_RETRIES; k++)); do
-  if docker exec "$CONTAINER_NAME" grep -q 'executed block height=' "$DAEMON_HOME/cosmovisor.log"; then
-    echo "✅ Cosmovisor is syncing blocks. Startup successful."
-    break 2
+  CHECK_RETRIES=20
+  BLOCK_FOUND=false
+
+  for ((k=1; k<=CHECK_RETRIES; k++)); do
+    if docker exec "$CONTAINER_NAME" grep -q 'executed block height=' "$DAEMON_HOME/cosmovisor.log"; then
+      echo "✅ Cosmovisor is syncing blocks. Startup successful."
+      BLOCK_FOUND=true
+      break
+    fi
+
+    echo "⏳ Still waiting for block sync... ($k/$CHECK_RETRIES)"
+    sleep "$SLEEP_INTERVAL"
+  done
+
+  if [ "$BLOCK_FOUND" = true ]; then
+    break
+  else
+    echo "⚠️ Cosmovisor did not show block execution after $CHECK_RETRIES attempts."
   fi
-
-  echo "⏳ Still waiting for block sync... ($k/$CHECK_RETRIES)"
-  sleep "$SLEEP_INTERVAL"
 done
 
-if [ "$k" -gt "$CHECK_RETRIES" ]; then
-  echo "❌ Cosmovisor did not show block execution after $CHECK_RETRIES attempts."
+if [ "$BLOCK_FOUND" = false ]; then
+  echo "❌ All Cosmovisor startup attempts failed to detect block execution."
   docker exec "$CONTAINER_NAME" tail -n 100 "$DAEMON_HOME/cosmovisor.log"
   exit 1
 fi
-
 # ✅ Tail logs
 echo "📜 Tailing Cosmovisor log..."
-docker exec -it "$CONTAINER_NAME" tail -n 50 -f "$DAEMON_HOME/cosmovisor.log"
+docker exec -i "$CONTAINER_NAME" tail -n 50 -f "$DAEMON_HOME/cosmovisor.log"
 
 exit 0
