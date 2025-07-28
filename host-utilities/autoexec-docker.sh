@@ -67,6 +67,10 @@ COSMOVISOR_STARTED=false
 for ((j=1; j<=START_RETRIES; j++)); do
   echo "⏳ Attempt #$j: Starting Cosmovisor..."
 
+  # 📌 Get initial log line count before starting
+  BASELINE_LINE_COUNT=$(docker exec "$CONTAINER_NAME" bash -c "wc -l < '$DAEMON_HOME/cosmovisor.log'")
+
+  # 🚀 Start Cosmovisor
   docker exec "$CONTAINER_NAME" bash -c "
     nohup cosmovisor run start \
       --home \"$DAEMON_HOME\" \
@@ -74,22 +78,21 @@ for ((j=1; j<=START_RETRIES; j++)); do
       >> \"$DAEMON_HOME/cosmovisor.log\" 2>&1 &
   "
 
-  sleep 5
-  echo "⏳ Checking Cosmovisor log for block height messages..."
-
+  echo "⏳ Watching new log lines for block sync events..."
   CHECK_RETRIES=25
+
   for ((k=1; k<=CHECK_RETRIES; k++)); do
-    if docker exec "$CONTAINER_NAME" bash -c "tail -n 100 '$DAEMON_HOME/cosmovisor.log' | grep -q 'executed block height='"; then
-      echo "✅ Cosmovisor is syncing blocks. Startup successful."
+    if docker exec "$CONTAINER_NAME" bash -c "tail -n +$((BASELINE_LINE_COUNT + 1)) '$DAEMON_HOME/cosmovisor.log' | grep -q 'indexed block events'"; then
+      echo "✅ Cosmovisor is indexing blocks. Startup successful."
       COSMOVISOR_STARTED=true
       break 2
     fi
 
-    echo "⏳ Still waiting for block sync... ($k/$CHECK_RETRIES)"
+    echo "⏳ Still waiting for new block events... ($k/$CHECK_RETRIES)"
     sleep "$SLEEP_INTERVAL"
   done
 
-  echo "⚠️ Cosmovisor did not show block execution after $CHECK_RETRIES attempts."
+  echo "⚠️ Cosmovisor did not show block events after $CHECK_RETRIES attempts."
 done
 
 if [ "$COSMOVISOR_STARTED" != true ]; then
@@ -100,6 +103,6 @@ fi
 
 # ✅ Tail logs
 echo "📜 Tailing Cosmovisor log..."
-docker exec -i "$CONTAINER_NAME" tail -n 50 -f "$DAEMON_HOME/cosmovisor.log"
+docker exec -i "$CONTAINER_NAME" tail -f "$DAEMON_HOME/cosmovisor.log"
 
 exit 0
