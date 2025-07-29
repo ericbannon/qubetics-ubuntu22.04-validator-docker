@@ -1,15 +1,12 @@
 #!/bin/bash
 
 LOG_FILE="/mnt/nvme/qubetics/cosmovisor.log"
-WINDOW_MINUTES=10
+DURATION_MINUTES=3
 
-echo "📊 Analyzing block rate over the last $WINDOW_MINUTES minutes..."
+echo "📡 Watching block production for $DURATION_MINUTES minutes..."
+echo "⏳ Start time: $(date)"
 
-now=$(date +%s)
-start_time=$((now - WINDOW_MINUTES * 60))
-today=$(date +%Y-%m-%d)
-
-block_count=$(awk -v today="$today" -v start="$start_time" -v now="$now" '
+block_count=$(timeout ${DURATION_MINUTES}m tail -n0 -F "$LOG_FILE" 2>/dev/null | awk '
 function strip_ansi(str) {
   gsub(/\x1b\[[0-9;]*m/, "", str)
   return str
@@ -17,25 +14,17 @@ function strip_ansi(str) {
 {
   line = strip_ansi($0)
   if (tolower(line) ~ /executed/) {
-    split(line, fields, " ")
-    time_str = fields[1]
-    full_ts = today " " time_str
-
-    cmd = "date -d \"" full_ts "\" +%s"
-    cmd | getline epoch
-    close(cmd)
-
-    if (epoch >= start && epoch <= now) {
-      count++
-    }
+    count++
   }
 }
 END {
   print count+0
 }
-' "$LOG_FILE")
+')
 
-rate_per_minute=$(( block_count / WINDOW_MINUTES ))
+rate_per_minute=$(( block_count / DURATION_MINUTES ))
 
-echo "🧱 Block count (last $WINDOW_MINUTES minutes): $block_count"
-echo "⏱️ Block rate per minute: $rate_per_minute"
+echo
+echo "✅ Done watching at: $(date)"
+echo "🧱 Block count: $block_count"
+echo "📈 Average block rate: $rate_per_minute blocks per minute"

@@ -6,6 +6,13 @@ A lightweight Bash script to calculate the average block production rate of a Qu
 
 ## ✅ Features
 
+Runs for 3 Minutes on the current log stream for quick execution:
+
+```
+📡 Watching block production for 3 minutes...
+⏳ Start time: Tue Jul 29 14:42:02 UTC 2025
+```
+
 - Parses timestamps like `7:46AM` from log lines
 - Matches lines containing **`executed`** (one per block)
 - Filters blocks based on real timestamps — no assumptions about block time
