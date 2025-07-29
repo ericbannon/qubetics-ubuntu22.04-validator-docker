@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LOG_FILE="/mnt/nvme/qubetics/cosmovisor.log"
-DURATION_MINUTES=3
+DURATION_MINUTES=10
 
 echo "📡 Watching block production for $DURATION_MINUTES minutes..."
 echo "⏳ Start time: $(date)"

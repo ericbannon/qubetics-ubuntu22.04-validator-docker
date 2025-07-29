@@ -6,7 +6,7 @@ A lightweight Bash script to calculate the average block production rate of a Qu
 
 ## ✅ Features
 
-Runs for 3 Minutes on the current log stream for quick execution:
+Runs for 10 Minutes on the current log stream for quick execution to calculate block executed/minute
 
 ```
 📡 Watching block production for 3 minutes...
