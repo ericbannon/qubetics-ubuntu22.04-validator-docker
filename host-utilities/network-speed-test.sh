@@ -1,1 +1,1 @@
-docker run --rm robinmanuelthiel/speedtest:latest
+docker run --rm --network=host rweijnen/speedtest
