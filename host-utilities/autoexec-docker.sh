@@ -101,8 +101,7 @@ if [ "$COSMOVISOR_STARTED" != true ]; then
   exit 1
 fi
 
-# ✅ Tail logs
-echo "📜 Tailing Cosmovisor log..."
-docker exec -i "$CONTAINER_NAME" tail -f "$DAEMON_HOME/cosmovisor.log"
+# Start vote/proposer monitoring in background
+nohup tail -F /mnt/nvme/qubetics/cosmovisor.log | grep -Ei "missed|vote" > /mnt/nvme/qubetics/validator_vote_monitor.log 2>&1 &
 
 exit 0
