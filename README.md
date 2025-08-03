@@ -1,6 +1,8 @@
-<img src="assets/qubetics-emb.png" alt="Qubetics Icon" width="400">
+# embTICS Validator for Qubetics
 
-📣 Join the embtics-validator that I am personally managing [Embticsvalidator Community](https://t.me/embticsvalidator)
+[📢 Join Telegram Updates](https://t.me/embticsvalidator)
+
+<img src="assets/qubetics-emb.png" alt="Qubetics Icon" width="600">
 
 **🛡️ Why I Run My Qubetics Validator in Docker — and Why It Benefits You** 
 
