@@ -20,7 +20,7 @@ The Docker Image will be updated with newer versions of qubeticsd and rebuilt wi
 * Modifies the qubetics_ubuntu_node.sh script to start the qubeticsd directly from cosmovisor since systemctl is not supported in Docker
 * Can be run as amd64 on any ARM system (eg. raspberry pi 5) with qemu emulation enabled
 * Creates a cosmovisor.log for viewing the block indexing in the background and to troubleshoot errors
-* Setup script sets fase fees to .01tics for best network performance (Per Qubetics reccomendation)
+* Setup script sets fase fees to .0001tics for best network performance (Per Qubetics reccomendation)
 * Reboot systemd service for auto-start and upgrades 
 * Additional scripts added for fast_sync to snapshotter 
 
