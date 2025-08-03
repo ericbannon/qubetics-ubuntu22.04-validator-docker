@@ -1,8 +1,14 @@
 # EMBtics Qubetics Validator Node 
 
-![embTICS Validator Community](assets/embticslogo.png)
+<p align="center">
+  <a href="https://t.me/embticsvalidator">
+    <img src="assets/embtics-logo.png" alt="embTICS Validator Logo" width="180"/>
+  </a>
+</p>
 
-🛡️ Why I Run My Qubetics Validator in Docker — and Why It Benefits You
+📣 Join the embtics-validator that I am personally managing [Embticsvalidator Community](https://t.me/embticsvalidator)
+
+**🛡️ Why I Run My Qubetics Validator in Docker — and Why It Benefits You** 
 
 Hey Qubetics fam 👋 — here’s why my validator node runs inside a Docker container, and why that matters for you as a delegator.
 
@@ -31,8 +37,6 @@ Come chat or follow status updates in my channel:
 
 Thanks for supporting decentralization.
 Let’s grow Qubetics together 🧱
-
-📣 Join the embtics-validator that I am personally managing [Embticsvalidator Community](https://t.me/qubetics)
 
 # qubetics-ubuntu22.04-validator-docker 📦
 
