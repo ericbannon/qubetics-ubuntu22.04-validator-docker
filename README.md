@@ -1,6 +1,5 @@
 # embTICS Validator for Qubetics
-
-[📢 Join Telegram Updates](https://t.me/embticsvalidator)
+[![Join Telegram](https://img.shields.io/badge/Telegram-embTICS-blue?logo=telegram&style=for-the-badge)](https://t.me/embticsvalidator)
 
 <img src="assets/qubetics-emb.png" alt="Qubetics Icon" width="600">
 
