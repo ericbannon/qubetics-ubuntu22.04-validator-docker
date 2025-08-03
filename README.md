@@ -1,6 +1,4 @@
- <p align="center">
-  <img src="assets/qubetics-emb.png" alt="EMBtics Qubetics Validator Node" width="500"/>
-</p>
+<img src="assets/qubetics-emb.png" alt="Qubetics Icon" width="400">
 
 📣 Join the embtics-validator that I am personally managing [Embticsvalidator Community](https://t.me/embticsvalidator)
 
@@ -33,7 +31,6 @@ Come chat or follow status updates in my channel:
 
 Thanks for supporting decentralization.
 Let’s grow Qubetics together 🧱
-
 
 # qubetics-ubuntu22.04-validator-docker 📦
 
