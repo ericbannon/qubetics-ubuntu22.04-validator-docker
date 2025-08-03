@@ -32,13 +32,15 @@ if ! docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
     --cpus="$(nproc)" \
     --memory="0" \
     --restart unless-stopped \
+    -p 26656:26656 \
+    -p 26657:26657 \
     -v /mnt/nvme:/mnt/nvme \
     -e DAEMON_NAME=qubeticsd \
     -e DAEMON_HOME="$DAEMON_HOME" \
     -e DAEMON_ALLOW_DOWNLOAD_BINARIES=false \
     -e DAEMON_RESTART_AFTER_UPGRADE=true \
     -e DAEMON_LOG_BUFFER_SIZE=512 \
-    -e DAEMON_DATA_BACKUP_DIR="$DAEMON_HOME/data-backup-2025-7-27" \
+    #-e DAEMON_DATA_BACKUP_DIR="/home/admin/qubetics_backup_2025-08-01" \
     "$VALIDATOR_IMAGE"
 fi
 
