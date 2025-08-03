@@ -1,9 +1,5 @@
-# EMBtics Qubetics Validator Node 
-
-<p align="center">
-  <a href="https://t.me/embticsvalidator">
-    <img src="assets/embtics-logo.png" alt="embTICS Validator Logo" width="180"/>
-  </a>
+ <p align="center">
+  <img src="assets/qubetics-icon.png" alt="EMBtics Qubetics Validator Node" width="100"/>
 </p>
 
 📣 Join the embtics-validator that I am personally managing [Embticsvalidator Community](https://t.me/embticsvalidator)
@@ -37,6 +33,7 @@ Come chat or follow status updates in my channel:
 
 Thanks for supporting decentralization.
 Let’s grow Qubetics together 🧱
+
 
 # qubetics-ubuntu22.04-validator-docker 📦
 
