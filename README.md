@@ -1,6 +1,6 @@
 # EMBtics Qubetics Validator Node 
 
-![embTICS Validator Community](assets/embtics-logo.png)
+![embTICS Validator Community](assets/embticslogo.png)
 
 🛡️ Why I Run My Qubetics Validator in Docker — and Why It Benefits You
 
