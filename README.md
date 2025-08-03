@@ -1,5 +1,5 @@
  <p align="center">
-  <img src="assets/qubetics-emb.png" alt="EMBtics Qubetics Validator Node" width="100"/>
+  <img src="assets/qubetics-emb.png" alt="EMBtics Qubetics Validator Node" width="500"/>
 </p>
 
 📣 Join the embtics-validator that I am personally managing [Embticsvalidator Community](https://t.me/embticsvalidator)
