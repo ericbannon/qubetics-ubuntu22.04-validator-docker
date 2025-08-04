@@ -104,6 +104,6 @@ if [ "$COSMOVISOR_STARTED" != true ]; then
 fi
 
 # Start vote/proposer monitoring in background
-nohup tail -F /mnt/nvme/qubetics/cosmovisor.log | grep -Ei "missed|vote" > /mnt/nvme/qubetics/validator_vote_monitor.log 2>&1 &
+nohup tail -F /mnt/nvme/qubetics/cosmovisor.log | grep -Ei "missed|vote" > /mnt/nvme/qubetics/logs/validator_vote_monitor.log 2>&1 &
 
 exit 0

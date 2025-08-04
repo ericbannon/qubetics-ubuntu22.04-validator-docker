@@ -1,13 +1,5 @@
-# embTICS Validator for Qubetics
-[![Join Telegram](https://img.shields.io/badge/Telegram-embTICS-blue?logo=telegram&style=for-the-badge)](https://t.me/embticsvalidator)
 
-<img src="assets/qubetics-emb.png" alt="Qubetics Icon" width="600">
-
-**🛡️ Why I Run My Qubetics Validator in Docker — and Why It Benefits You** 
-
-Hey Qubetics fam 👋 — here’s why my validator node runs inside a Docker container, and why that matters for you as a delegator.
-
-With 20+ years of experience in infrastructure, DevSecOps, cloud, and cybersecurity, I’ve built this validator for reliability, transparency, and uptime.
+**🛡️ Why Run a Qubetics Validator in Docker — and Why It Benefits You** 
 
 ✅ Zero-Downtime Upgrades
 Cosmovisor + Docker lets me apply upgrades without missing blocks — safely and cleanly.
@@ -22,13 +14,8 @@ Health checks and block sync alerts fire in real time — no guessing, no surpri
 Mounted SSD, automated snapshots, and quick redeploys ensure data safety.
 
 🔍 Open-Source Setup
-Every line of my validator infrastructure is public and reproducible.
+Every line of the validator infrastructure is public and reproducible.
 📂 GitHub: github.com/ericbannon/qubetics-ubuntu22.04-validator-docker
-
-🗣️ Transparency First
-You’re delegating to a validator that believes in openness and community trust.
-Come chat or follow status updates in my channel:
-👉 Join Telegram Updates @embticsvalidator
 
 Thanks for supporting decentralization.
 Let’s grow Qubetics together 🧱
