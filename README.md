@@ -1,3 +1,16 @@
+# qubetics-ubuntu22.04-validator-docker 📦
+
+## Description
+This is a working example of a Dockerized deployment that leverages Ubuntu 22.04 to run the Qubetics Mainnet Validator Node on any cloud environment, or hardware. 
+
+I will continue to pull from the upstream fork and make modifications to this repo to ensure validator-node enhancements continue to work in a Dockerized configuration and continual upgrades as they are released
+
+**Image Repository:** https://hub.docker.com/repository/docker/bannimal/tics-validator-node/general 
+
+The Docker Image will be updated with newer versions of qubeticsd and rebuilt with the same version tag. I.e. v1.0.2 will be next.
+
+📣 Join the conversation in [Telegram](https://t.me/qubetics)
+
 
 **🛡️ Why Run a Qubetics Validator in Docker — and Why It Benefits You** 
 
@@ -19,19 +32,6 @@ Every line of the validator infrastructure is public and reproducible.
 
 Thanks for supporting decentralization.
 Let’s grow Qubetics together 🧱
-
-# qubetics-ubuntu22.04-validator-docker 📦
-
-## Description
-This is a working example of a Dockerized deployment that leverages Ubuntu 22.04 to run the Qubetics Mainnet Validator Node on any cloud environment, or hardware. 
-
-I will continue to pull from the upstream fork and make modifications to this repo to ensure validator-node enhancements continue to work in a Dockerized configuration and continual upgrades as they are released
-
-**Image Repository:** https://hub.docker.com/repository/docker/bannimal/tics-validator-node/general 
-
-The Docker Image will be updated with newer versions of qubeticsd and rebuilt with the same version tag. I.e. v1.0.2 will be next.
-
-📣 Join the conversation in [Telegram](https://t.me/qubetics)
 
 ### Key notes
 
