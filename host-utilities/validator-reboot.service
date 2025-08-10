@@ -6,7 +6,7 @@ Requires=docker.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/home/admin/autoexec-docker.sh
+ExecStart=/home/admin/scripts/validator-startup.sh
 WorkingDirectory=/home/admin
 StandardOutput=journal
 StandardError=journal

@@ -7,9 +7,9 @@ LABEL maintainer="Eric Bannon - GitHub: ericbannon" \
 # Install Qubetics node prerequisites 
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV UPGRADE_URL=https://github.com/Qubetics/qubetics-mainnet-upgrade/releases/download/ubuntu22.04/qubeticsd
+ENV UPGRADE_URL=https://github.com/Qubetics/qubetics-upgrade-v1.0.2/releases/download/ubuntu22.04/qubeticsd
 ENV COSMOVER=1.5.0
-ENV UPGRADEVER=v1.0.1
+ENV UPGRADEVER=v1.0.2
 
 # Set environment variables if needed
 # ENV DAEMON_NAME=qubeticsd
@@ -52,16 +52,14 @@ RUN rm -rf /opt/qubetics && \
     mv /opt/qubetics/ubuntu22.04build/qubeticsd /usr/local/bin && \
     chmod +x /usr/local/bin/qubeticsd && \
     chmod +x /opt/qubetics/qubetics_ubuntu_node.sh && \
-    chmod +x /opt/qubetics/misc-utilities/* && \
     chmod +x /opt/qubetics/host-utilities/*
 
 # Download upgrade binary and place it in the upgrade slot
-RUN mkdir -p /mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin && \
-    curl -L $UPGRADE_URL -o /mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd && \
-    chmod +x /mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd
+RUN mkdir -p /opt/cosmovisor/upgrades/${UPGRADEVER}/bin && \
+    curl -L "${UPGRADE_URL}" -o /opt/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd && \
+    chmod +x /opt/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd
 
 # Install COSMOVISOR 1.5.0 
-
 RUN go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@v${COSMOVER} && \
     mv /go/bin/cosmovisor /usr/local/bin/ && \
     chmod +x /usr/local/bin/cosmovisor

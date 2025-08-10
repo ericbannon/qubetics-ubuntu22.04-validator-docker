@@ -1,9 +1,12 @@
 #!/bin/bash
-exec >> /home/admin/validator-startup.log 2>&1
+exec >> /home/admin/logs/validator-startup.log 2>&1
 
+# ---- basics ----
+mkdir -p /home/admin/logs
 CONTAINER_NAME="validator-node"
 DAEMON_HOME="/mnt/nvme/qubetics"
-VALIDATOR_IMAGE="bannimal/tics-validator-node:v1.0.1"
+VALIDATOR_IMAGE="bannimal/tics-validator-node:v1.0.2"
+: "${UPGRADEVER:=v1.0.2}"  # must match the on-chain plan dir name under upgrades/
 
 echo "🔁 Resetting QEMU binfmt for cross-arch Docker support..."
 docker run --privileged --rm tonistiigi/binfmt --install all
@@ -40,7 +43,6 @@ if ! docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
     -e DAEMON_ALLOW_DOWNLOAD_BINARIES=false \
     -e DAEMON_RESTART_AFTER_UPGRADE=true \
     -e DAEMON_LOG_BUFFER_SIZE=512 \
-    #-e DAEMON_DATA_BACKUP_DIR="/home/admin/qubetics_backup_2025-08-01" \
     "$VALIDATOR_IMAGE"
 fi
 
@@ -59,6 +61,26 @@ else
   echo "✅ Container '$CONTAINER_NAME' is running."
 fi
 
+# ─────────────────────────────────────────────────────────
+# 📌 Seed upgrade binary from image → NVMe if missing
+#   Image must contain: /opt/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd
+#   Copies to:          /mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd
+# ─────────────────────────────────────────────────────────
+if ! docker exec "$CONTAINER_NAME" test -x "/mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd"; then
+  echo "📥 Seeding upgrade ${UPGRADEVER} binary to host volume..."
+  docker exec "$CONTAINER_NAME" bash -lc "
+    set -e
+    if [ ! -x \"/opt/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd\" ]; then
+      echo '❌ Missing /opt/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd in image'; exit 1
+    fi
+    mkdir -p \"/mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin\" &&
+    cp \"/opt/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd\" \"/mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin/\" &&
+    chmod +x \"/mnt/nvme/qubetics/cosmovisor/upgrades/${UPGRADEVER}/bin/qubeticsd\"
+  " || { echo "❌ Seeding failed"; exit 1; }
+else
+  echo "✅ Upgrade binary ${UPGRADEVER} already present on NVMe."
+fi
+
 # ✅ Start Cosmovisor with retry logic
 echo "📦 Attempting to start Cosmovisor with retry on DB lock..."
 
@@ -70,10 +92,10 @@ for ((j=1; j<=START_RETRIES; j++)); do
   echo "⏳ Attempt #$j: Starting Cosmovisor..."
 
   # 📌 Get initial log line count before starting
-  BASELINE_LINE_COUNT=$(docker exec "$CONTAINER_NAME" bash -c "wc -l < '$DAEMON_HOME/cosmovisor.log'")
+  BASELINE_LINE_COUNT=$(docker exec "$CONTAINER_NAME" bash -c "wc -l < '$DAEMON_HOME/cosmovisor.log' || echo 0")
 
   # 🚀 Start Cosmovisor
-  docker exec "$CONTAINER_NAME" bash -c "
+  docker exec "$CONTAINER_NAME" bash -lc "
     nohup cosmovisor run start \
       --home \"$DAEMON_HOME\" \
       --json-rpc.api eth,txpool,personal,net,debug,web3 \
@@ -84,7 +106,7 @@ for ((j=1; j<=START_RETRIES; j++)); do
   CHECK_RETRIES=25
 
   for ((k=1; k<=CHECK_RETRIES; k++)); do
-    if docker exec "$CONTAINER_NAME" bash -c "tail -n +$((BASELINE_LINE_COUNT + 1)) '$DAEMON_HOME/cosmovisor.log' | grep -q 'indexed block events'"; then
+    if docker exec "$CONTAINER_NAME" bash -lc "tail -n +$((BASELINE_LINE_COUNT + 1)) '$DAEMON_HOME/cosmovisor.log' | grep -q 'indexed block events'"; then
       echo "✅ Cosmovisor is indexing blocks. Startup successful."
       COSMOVISOR_STARTED=true
       break 2
@@ -97,13 +119,14 @@ for ((j=1; j<=START_RETRIES; j++)); do
   echo "⚠️ Cosmovisor did not show block events after $CHECK_RETRIES attempts."
 done
 
-if [ "$COSMOVISOR_STARTED" != true ]; then
+if [ "$COSMOVISOR_STARTED" != true ] ; then
   echo "❌ Cosmovisor startup failed after $START_RETRIES attempts."
-  docker exec "$CONTAINER_NAME" tail -n 100 "$DAEMON_HOME/cosmovisor.log"
   exit 1
 fi
 
 # Start vote/proposer monitoring in background
-nohup tail -F /mnt/nvme/qubetics/cosmovisor.log | grep -Ei "missed|vote" > /mnt/nvme/qubetics/logs/validator_vote_monitor.log 2>&1 &
+mkdir -p /mnt/nvme/qubetics/logs
+nohup tail -F /mnt/nvme/qubetics/cosmovisor.log | grep -Ei "missed|vote" > /mnt/nvme/qubetics/logs/validator_vote_monitor.log 2>&1 < /dev/null & disown
 
+echo "✅ Cosmovisor started successfully and vote monitor is running."
 exit 0
