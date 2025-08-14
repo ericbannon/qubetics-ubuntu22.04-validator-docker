@@ -7,7 +7,7 @@ I will continue to pull from the upstream fork and make modifications to this re
 
 **Image Repository:** https://hub.docker.com/repository/docker/bannimal/tics-validator-node/general 
 
-The Docker Image will be updated with newer versions of qubeticsd and rebuilt with the same version tag. I.e. v1.0.2 will be next.
+The Docker Image will be updated with newer versions of qubeticsd and rebuilt with the same version tag. v1.0.3 will be next.
 
 ## Welcome to Block Dock Validator* 🚢🐳
 
