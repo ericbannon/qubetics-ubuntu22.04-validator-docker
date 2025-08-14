@@ -51,10 +51,7 @@ Not “instanode” or one-click. We run our own configs and share learnings. Ex
 • Predictable upgrades → fewer interruptions  
 • Clear comms → no surprises
 
-👉 *Subscribe for updates:* @blockdockvalidator  
-*Validator (valoper):* qubeticsvaloper18llj8eqh9k9mznylk8svrcc63ucf7y2r4xkd8l
-
-### Key notes
+# Key notes for Opensource Codebase
 
 * Installs Go 1.22.4 which coscmovisor@v1.5.0 relies on
 * Installs all prerequisites (eg. jq qget build-essential, etc..)
