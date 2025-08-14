@@ -9,29 +9,47 @@ I will continue to pull from the upstream fork and make modifications to this re
 
 The Docker Image will be updated with newer versions of qubeticsd and rebuilt with the same version tag. I.e. v1.0.2 will be next.
 
-📣 Join the conversation in [Telegram](https://t.me/qubetics)
+## **Welcome to Block Dock Validator* 🚢🐳**
 
+<p align="center">
+  <a href="https://t.me/blockdockvalidator">
+    <img src="assets/blockdock.png" alt="Block Dock Productions logo" width="260">
+  </a>
+</p>
 
-**🛡️ Why Run a Qubetics Validator in Docker — and Why It Benefits You** 
+👉 *Subscribe for updates:* @blockdockvalidator  
+*Validator (valoper):* qubeticsvaloper18llj8eqh9k9mznylk8svrcc63ucf7y2r4xkd8l
 
-✅ Zero-Downtime Upgrades
-Cosmovisor + Docker lets me apply upgrades without missing blocks — safely and cleanly.
+Stake with confidence. Here’s what you get as a delegator:
 
-🔐 Security by Design
-Containerized setup with hardened isolation and controlled access.
+### 🔒 *Private, non-cloud infrastructure** 
+Our validator runs on a private server over a private VPN—no big-cloud control plane, no shared tenancy. Fewer noisy neighbors and fewer correlated outages mean more time signing blocks and earning rewards.
 
-📡 Live Monitoring + Telegram Alerts
-Health checks and block sync alerts fire in real time — no guessing, no surprises.
+### 🛡️ *Operated by a 20-year cybersecurity pro*  
+Security basics done right: least-privilege access, hardened hosts, change control, and continuous monitoring. It’s all designed to reduce operational mistakes that can lead to downtime or slashing.
 
-💾 Backups + Portability
-Mounted SSD, automated snapshots, and quick redeploys ensure data safety.
+### ⚙️ *High-performance hardware & network*  
+Built on powerful compute, fast disks, and reliable networking. That translates to quick block processing, stable peering, and fewer missed signatures—i.e., *more consistent rewards* over time.
 
-🔍 Open-Source Setup
-Every line of the validator infrastructure is public and reproducible.
-📂 GitHub: github.com/ericbannon/qubetics-ubuntu22.04-validator-docker
+### 🐳 *Containerized (Docker) for safe, smooth upgrades*  
+- *Consistency:* The validator and its dependencies ship together, so upgrades are predictable.  
+- *Low downtime:* We stage updates and restart cleanly so you keep earning.  
+- *Fast rollback:* If something breaks, we can revert quickly to a known-good image.  
+- *Easy failover/DR:* Identical containers can be brought up on standby hardware fast.
 
-Thanks for supporting decentralization.
-Let’s grow Qubetics together 🧱
+### 🌐 *Open community, built from scratch*  
+Not “instanode” or one-click. We run our own configs and share learnings. Expect clear maintenance windows, upgrade notices, and transparent ops.
+
+#### 🌐 **Transparency: OPENSOURCE CODE for delegators to view upgrade scripts, automation and new enhancements directly in code**
+
+*What this means for you:*  
+• Higher uptime → more chances to collect rewards  
+• Secure operations → lower operational risk  
+• Predictable upgrades → fewer interruptions  
+• Clear comms → no surprises
+
+👉 *Subscribe for updates:* @blockdockvalidator  
+*Validator (valoper):* qubeticsvaloper18llj8eqh9k9mznylk8svrcc63ucf7y2r4xkd8l
 
 ### Key notes
 
