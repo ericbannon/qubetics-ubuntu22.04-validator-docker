@@ -40,9 +40,9 @@ Let’s grow Qubetics together 🧱
 * Sets ENV for all required PATHS
 * Leverages a modified qubetics_ubuntu_node.sh script that removes pre-requisite installations
 * Modifies the qubetics_ubuntu_node.sh script to start the qubeticsd directly from cosmovisor since systemctl is not supported in Docker
-* Can be run as amd64 on any ARM system (eg. raspberry pi 5) with qemu emulation enabled
+* Can be run as amd64 on any ARM system with qemu emulation enabled
 * Creates a cosmovisor.log for viewing the block indexing in the background and to troubleshoot errors
-* Setup script sets fase fees to .0001tics for best network performance (Per Qubetics reccomendation)
+* Setup script sets fase fees for best network performance (Per Qubetics reccomendation)
 * Reboot systemd service for auto-start and upgrades 
 * Additional scripts added for fast_sync to snapshotter 
 
@@ -87,6 +87,9 @@ Runs a background Docker container with the Qubetics configurations installed.
 
 Once block 175000 is reached, it switches to the upgrade binary in:
 /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin/qubeticsd
+
+Once block 75000 is reached, it switches to the upgrade binary in:
+/mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.2/bin/qubeticsd
 
 #### Run the Docker Container in the Background 🧪
 
