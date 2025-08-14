@@ -15,7 +15,7 @@ The Docker Image will be updated with newer versions of qubeticsd and rebuilt wi
 
 <p>
   <a href="https://t.me/blockdockvalidator">
-    <img src="docs/assets/blockdock.png" alt="Block Dock Productions logo" width="260">
+    <img src="assets/blockdock.png" alt="Block Dock Productions logo" width="260">
   </a>
 </p>
 
