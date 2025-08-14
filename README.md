@@ -9,17 +9,19 @@ I will continue to pull from the upstream fork and make modifications to this re
 
 The Docker Image will be updated with newer versions of qubeticsd and rebuilt with the same version tag. I.e. v1.0.2 will be next.
 
-## **Welcome to Block Dock Validator* 🚢🐳**
+## Welcome to Block Dock Validator* 🚢🐳
 
-<p align="center">
+*Validator (valoper):* qubeticsvaloper18llj8eqh9k9mznylk8svrcc63ucf7y2r4xkd8l
+<p>
   <a href="https://t.me/blockdockvalidator">
-    <img src="assets/blockdock.png" alt="Block Dock Productions logo" width="260">
+    <img src="docs/assets/block-dock-logo.png" alt="Block Dock Productions logo" width="260">
   </a>
 </p>
 
-👉 *Subscribe for updates:* @blockdockvalidator  
-*Validator (valoper):* qubeticsvaloper18llj8eqh9k9mznylk8svrcc63ucf7y2r4xkd8l
+👉 *Subscribe for updates:  
 
+<p><strong>Telegram:</strong> <a href="https://t.me/blockdockvalidator">@blockdockvalidator</a></p>
+ 
 Stake with confidence. Here’s what you get as a delegator:
 
 ### 🔒 *Private, non-cloud infrastructure** 
