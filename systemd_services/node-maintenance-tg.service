@@ -1,0 +1,18 @@
+# /etc/systemd/system/node-maintenance-tg.service
+[Unit]
+Description=Validator maintenance notice & health check on boot
+Wants=docker.service network-online.target
+After=docker.service network-online.target
+ConditionPathExists=/home/admin/scripts/node_maintenance_tg.sh
+
+[Service]
+Type=oneshot
+ExecStart=/home/admin/scripts/node_maintenance_tg.sh --boot
+User=root
+Group=root
+Nice=5
+IOSchedulingClass=best-effort
+IOSchedulingPriority=4
+
+[Install]
+WantedBy=multi-user.target

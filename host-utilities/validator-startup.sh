@@ -8,9 +8,6 @@ DAEMON_HOME="/mnt/nvme/qubetics"
 VALIDATOR_IMAGE="bannimal/tics-validator-node:v1.0.2"
 : "${UPGRADEVER:=v1.0.2}"  # must match the on-chain plan dir name under upgrades/
 
-echo "🔁 Resetting QEMU binfmt for cross-arch Docker support..."
-docker run --privileged --rm tonistiigi/binfmt --install all
-
 # ✅ Wait for Docker daemon (max 30s)
 RETRIES=30
 until docker info >/dev/null 2>&1 || [ $RETRIES -eq 0 ]; do

@@ -1,0 +1,16 @@
+# /etc/systemd/system/binfmt-amd64.service
+[Unit]
+Before=validator-startup.service
+Description=Register binfmt_misc for QEMU amd64 emulation
+DefaultDependencies=no
+After=local-fs.target docker.service
+Before=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/docker run --privileged --rm tonistiigi/binfmt --uninstall qemu-*
+ExecStart=/usr/bin/docker run --privileged --rm tonistiigi/binfmt --install amd64
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
