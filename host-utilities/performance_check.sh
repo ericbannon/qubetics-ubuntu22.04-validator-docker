@@ -1,93 +1,131 @@
-# Adjust only if needed:
-CONTAINER="validator-node"
-VALOPER="qubeticsvaloper18llj8eqh9k9mznylk8svrcc63ucf7y2r4xkd8l"
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Try to auto-detect container if the default isn't found
+CONTAINER="${CONTAINER:-validator-node}"
+VALOPER="${VALOPER:-qubeticsvaloper18llj8eqh9k9mznylk8svrcc63ucf7y2r4xkd8l}"
+HOME_DIR="${HOME_DIR:-/mnt/nvme/qubetics}"
+KEYRING="${KEYRING:-file}"
+
+# --- find container if name differs ---
 if ! docker ps --format '{{.Names}}' | grep -q -E "^${CONTAINER}$"; then
   CANDIDATE="$(docker ps --format '{{.Names}} {{.Image}}' | awk '/qubetics|tics-validator|cosmovisor|tendermint|comet/ {print $1; exit}')"
   [ -n "$CANDIDATE" ] && CONTAINER="$CANDIDATE"
 fi
+
 echo "Using container: ${CONTAINER}"
 echo "Using VALOPER:   ${VALOPER}"
+echo "Using HOME_DIR:  ${HOME_DIR} (keyring-backend=${KEYRING})"
+echo
 
+# --- basics ---
 echo "== Host basics =="
 date -Is; uname -a; uptime
 echo
-free -h; df -h /mnt/nvme || true
+free -h; df -h "${HOME_DIR}" || true
 echo
 
 echo "== Time sync =="
-if command -v chronyc >/dev/null 2>&1; then
-  chronyc tracking
-else
-  echo "chrony not installed"
-fi
+if command -v chronyc >/dev/null 2>&1; then chronyc tracking; else echo "chrony not installed"; fi
 timedatectl | sed -n '1,8p'
 echo
 
 echo "== Node health =="
 if command -v vcgencmd >/dev/null 2>&1; then
-  vcgencmd get_throttled
-  vcgencmd measure_temp
+  vcgencmd get_throttled || true
+  vcgencmd measure_temp || true
 else
   echo "vcgencmd not available"
 fi
 echo
 
 echo "== Container status =="
-docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.RunningFor}}' | sed -n '1,200p' | grep -E "^${CONTAINER}\b" || echo "container not found"
+docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.RunningFor}}' | awk -v c="$CONTAINER" 'NR==1 || $1==c'
 docker inspect -f 'RestartCount={{.RestartCount}}  OOMKilled={{.State.OOMKilled}}' "$CONTAINER" 2>/dev/null || true
+echo
+
+# --- resolve RPC host port & container IP ---
+HOST_RPC="http://127.0.0.1:26657"
+if docker inspect "$CONTAINER" >/dev/null 2>&1; then
+  HOST_PORT="$(docker inspect -f '{{range $p,$cfg := .NetworkSettings.Ports}}{{$p}} {{(index $cfg 0).HostPort}}{{"\n"}}{{end}}' "$CONTAINER" | awk '$1 ~ /26657/ {print $2; exit}')"
+  [ -n "${HOST_PORT:-}" ] && HOST_RPC="http://127.0.0.1:${HOST_PORT}"
+  CONT_IP="$(docker inspect -f '{{.NetworkSettings.IPAddress}}' "$CONTAINER" 2>/dev/null || echo "")"
+else
+  CONT_IP=""
+fi
+echo "Resolved RPC (host):      ${HOST_RPC}"
+[ -n "$CONT_IP" ] && echo "Container IP (fallback): http://${CONT_IP}:26657"
 echo
 
 echo "== Node logs (last 30m, errors only) =="
 docker logs "$CONTAINER" --since 30m 2>&1 | egrep -i 'panic|oom|killed process|consensus|precommit|prevote|timeout|failed|error' | tail -n 120 || true
 echo
 
-echo "== RPC health (/health /status /net_info) =="
+# helper: safe curl that doesn’t complain if we trim output
+pcurl () { curl -sS --max-time 3 "$1" 2>/dev/null || echo "rpc unavailable"; }
+
+echo "== RPC health (HOST → ${HOST_RPC}) =="
+for ep in /health /status /net_info; do
+  echo "=== ${ep} ==="
+  pcurl "${HOST_RPC}${ep}" | head -c 2000 || true
+  echo
+done
+echo
+
+echo "== RPC health (INSIDE CONTAINER → 127.0.0.1:26657) =="
 docker exec "$CONTAINER" sh -lc '
-  H=127.0.0.1:26657
-  for ep in /health /status /net_info ; do
+  set -e
+  pcurl () { curl -sS --max-time 3 "$1" 2>/dev/null || echo "rpc unavailable"; }
+  for ep in /health /status /net_info; do
     echo "=== $ep ==="
-    if command -v curl >/dev/null 2>&1; then curl -s "$H$ep" || echo "rpc unavailable";
-    elif command -v wget >/dev/null 2>&1; then wget -qO- "$H$ep" || echo "rpc unavailable";
-    else echo "no curl/wget"; fi
+    pcurl "http://127.0.0.1:26657$ep" | head -c 2000 || true
+    echo
   done
-' 2>/dev/null || echo "exec into container failed"
+' || echo "exec into container failed"
+echo
+
+echo "== Keys at ${HOME_DIR}/keyring-${KEYRING} =="
+docker exec "$CONTAINER" sh -lc "
+  qubeticsd keys list \
+    --home='${HOME_DIR}' \
+    --keyring-backend='${KEYRING}' 2>/dev/null || echo 'keys list failed'
+"
+echo
+
+# surface config: rpc bind & indexer
+echo "== Config snippets (rpc laddr, tx indexer, pruning) =="
+grep -nE '^[[:space:]]*laddr|^[[:space:]]*indexer[[:space:]]*=' "${HOME_DIR}/config/config.toml" 2>/dev/null || true
+grep -nE '^[[:space:]]*(pruning|iavl-cache-size|min-retain-blocks)[[:space:]]*=' "${HOME_DIR}/config/app.toml" 2>/dev/null || true
+# Explicitly report indexer status
+INDEXER=$(awk -F= '/^[[:space:]]*indexer[[:space:]]*=/{gsub(/["[:space:]]/,"",$2);print $2}' "${HOME_DIR}/config/config.toml" 2>/dev/null || echo "")
+[ -n "$INDEXER" ] && echo "Tx indexer: ${INDEXER} (set indexer=\"kv\" to enable q tx <hash>)"
 echo
 
 echo "== Validator key & chain view =="
-docker exec "$CONTAINER" sh -lc '
-  # show local validator pubkey/address
-  echo "== local validator pubkey/address =="
-  (qubeticsd tendermint show-validator 2>/dev/null || qubeticsd comet show-validator 2>/dev/null || echo "show-validator unavailable") | sed -n "1,3p"
-  # status address (may need jq but we fall back to plain output)
-  if command -v jq >/dev/null 2>&1; then
-    echo "== status validator address =="
-    qubeticsd status 2>/dev/null | jq -r ".ValidatorInfo.Address"
-  else
-    echo "install jq for nicer output (optional)"; qubeticsd status 2>/dev/null | sed -n "1,80p"
-  fi
-  echo "== chain sees for VALOPER =="
-  if command -v jq >/dev/null 2>&1; then
-    qubeticsd q staking validator '"$VALOPER"' -o json 2>/dev/null | jq -r ".consensus_pubkey,.jailed"
-  else
-    qubeticsd q staking validator '"$VALOPER"' 2>/dev/null | sed -n "1,80p"
-  fi
-' || true
+docker exec "$CONTAINER" sh -lc "
+  set -e
+  NODE='${HOST_RPC}'
+  echo '-- local validator pubkey/address --'
+  (qubeticsd tendermint show-validator --home='${HOME_DIR}' 2>/dev/null || \
+   qubeticsd comet show-validator --home='${HOME_DIR}' 2>/dev/null || \
+   echo 'show-validator unavailable') | sed -n '1,3p'
+
+  echo '-- status (synced?) --'
+  curl -sS \"\${NODE}/status\" 2>/dev/null | sed -n '1,200p'
+
+  echo '-- staking validator (on-chain) --'
+  qubeticsd q staking validator '${VALOPER}' --node \"\${NODE}\" 2>/dev/null | sed -n '1,200p'
+"
 echo
 
-echo "== Slashing: your signing info & params =="
-docker exec "$CONTAINER" sh -lc '
-  if command -v jq >/dev/null 2>&1; then
-    CONSADDR=$(qubeticsd status 2>/dev/null | jq -r ".ValidatorInfo.Address")
-    echo "CONSADDR=$CONSADDR"
-  else
-    CONSADDR=""
-    echo "CONSADDR (jq not available; skipped extract)"
-  fi
-  [ -n "$CONSADDR" ] && qubeticsd q slashing signing-info "$CONSADDR" 2>/dev/null || true
-  qubeticsd q slashing params 2>/dev/null | sed -n "1,120p" || true
-' || true
+echo "== Slashing: signing-info & params =="
+docker exec "$CONTAINER" sh -lc "
+  set -e
+  NODE='${HOST_RPC}'
+  CONSADDR=\$(curl -sS \"\${NODE}/status\" 2>/dev/null | sed -n 's/.*\"address\":\"\\([A-F0-9]\\+\\)\".*/\\1/p' | head -n1)
+  [ -n \"\${CONSADDR}\" ] && echo CONSADDR=\${CONSADDR} || echo 'CONSADDR not parsed (install jq for nicer JSON parsing)'
+  [ -n \"\${CONSADDR}\" ] && qubeticsd q slashing signing-info \"\${CONSADDR}\" --node \"\${NODE}\" 2>/dev/null | sed -n '1,160p' || true
+  qubeticsd q slashing params --node \"\${NODE}\" 2>/dev/null | sed -n '1,160p' || true
+"
 echo
 
 echo "== Kernel messages: OOM/USB/NVMe/power =="
@@ -101,4 +139,7 @@ if ! command -v iostat >/dev/null 2>&1; then
 fi
 iostat -xz 1 3 || true
 docker stats --no-stream || true
+
+# --- helper: safe self-delegate using your keyring/RPC ---
+
 echo "--- End of triage ---"

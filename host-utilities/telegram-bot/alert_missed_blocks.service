@@ -1,0 +1,18 @@
+sudo tee /etc/systemd/system/qubetics-alert.service >/dev/null <<'EOF'
+[Unit]
+Description=Qubetics missed block Telegram alert
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/default/qubetics_alert
+ExecStart=/bin/bash -c '/home/admin/scripts/alert_missed_blocks.sh >> /home/admin/scripts/missed_blocks.log 2>&1'
+Restart=always
+RestartSec=5
+User=admin
+WorkingDirectory=/home/admin/scripts
+
+[Install]
+WantedBy=multi-user.target
+EOF
