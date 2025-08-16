@@ -46,6 +46,10 @@ Examines your commit for specified block height to confirm NIL, ABSENT, IN_SET, 
 
 Samples a 10 minute window to see the top 10 most active peers for helping configure persinstent peer settings in config.toml
 
+### net_stability_watch.sh
+
+Polls the cosmovisor.log for 10 minutes to detect network stability issues, timeouts and flapping
+
 ### telegram-bot folder
 
 Includes auto update TG messages script examples, node maintenance notifications, and more
