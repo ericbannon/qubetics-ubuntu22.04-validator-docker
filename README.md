@@ -201,8 +201,4 @@ Since you have started the Docker container in the background using the "-d" fla
 ## See host-utilities README.md 🔧
 Instructions on Auto-Upgrades and Safe Reboot in [Host Utilities README](./host-utilities/README.md)
 
-## See validator-metrics README.md 📊
-Utilities for measuring block sync metrics and other performance metrics in [validator-metrics README](./validator-metrics/README.md)
-
-
 
