@@ -4,8 +4,8 @@
 HOME_DIR="/mnt/nvme/qubetics"
 THRESHOLD=2000  # alert when missed blocks >= this number
 CHECK_INTERVAL=60  # seconds
-BOT_TOKEN="1234567890:ABCdefGhIjKlMnOpQrStUvWxYz"  # from BotFather
-CHAT_ID="123456789"  # from @userinfobot
+TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
+TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-}"
 
 send_alert() {
     local message="$1"
