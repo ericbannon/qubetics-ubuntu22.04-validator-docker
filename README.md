@@ -85,12 +85,16 @@ Build your own docker image as an amd64 image for x86 usage (ARM is not currentl
 
 - SSD mounted at `/mnt/nvme`
 - Domain name (e.g., `node.validator-tics.com`) - (You need to have your own external Domain name and A record pointed to you public IP for your router and port forwarding enabled on server)
-- Port forwarding enabled on your router:
+- Reverse Proxy on your server (Using Caddy)
+
+#### Port Forwarding
+- If you want to access the Validator Dashboard you can enable port forwarding on your router:
   - TCP 26656 (P2P)
   - TCP 26657 (RPC)
   - TCP 443 (HTTPS)
   - Optional: TCP 80 (redirect)
-  - Reverse Proxy on your server (Using Caddy)
+
+- For enhanced security, you do not need to open this ports if you plan to limit inbound connections and only use outbound peers behind you NAT. This is more secure when using a private serber
 
 **IMPORTANT**: This assumes that you have mounted your desired storage partition as /mnt/nvme/ on your host system. If you have changed this, then your ubuntu setup script home directory will need to be changed accordingly.
 
