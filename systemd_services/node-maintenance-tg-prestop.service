@@ -5,11 +5,11 @@ DefaultDependencies=no
 Before=shutdown.target halt.target reboot.target
 Wants=network-online.target
 After=network-online.target
-ConditionPathExists=/home/admin/scripts/node_maintenance_tg.sh
+ConditionPathExists=/home/admin/scripts/node_maintenance_notify.sh
 
 [Service]
 Type=oneshot
-ExecStart=/home/admin/scripts/node_maintenance_tg.sh --pre-shutdown
+ExecStart=/home/admin/scripts/node_maintenance_notify.sh --pre-shutdown
 User=root
 Group=root
 TimeoutStartSec=20

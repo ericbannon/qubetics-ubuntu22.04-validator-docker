@@ -3,11 +3,11 @@
 Description=Validator maintenance notice & health check on boot
 Wants=docker.service network-online.target
 After=docker.service network-online.target
-ConditionPathExists=/home/admin/scripts/node_maintenance_tg.sh
+ConditionPathExists=/home/admin/scripts/node_maintenance_notify.sh
 
 [Service]
 Type=oneshot
-ExecStart=/home/admin/scripts/node_maintenance_tg.sh --boot
+ExecStart=/home/admin/scripts/node_maintenance_notify.sh --boot
 User=root
 Group=root
 Nice=5
