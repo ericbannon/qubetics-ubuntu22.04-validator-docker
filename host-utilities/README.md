@@ -20,3 +20,32 @@ sudo systemctl enable validator-reboot.service
 sudo systemctl start validator-reboot.service
 ``` 
 
+### performance_check.sh
+
+Runs a series of performance checks on your node including syncing status, CPU/MEM/DISK IO data, and network bottlenecks
+
+### p2p_health.sh
+
+Checks current p2p health
+
+### check_missed_range.sh
+
+Checks the last 100 block heights to confirm NIL, ABSENT, IN_SET, NOT_IN_SET details.
+
+### missed_block_analysis
+
+**Usage**
+
+Examines your commit for specified block height to confirm NIL, ABSENT, IN_SET, NOT_IN_SET and signing details for troubleshooting or confirming correct missed_block_counters seen. 
+
+```
+./missed_block_analysis -H <block-height>
+```
+
+### harvest_persistent_peers.sh
+
+Samples a 10 minute window to see the top 10 most active peers for helping configure persinstent peer settings in config.toml
+
+### telegram-bot folder
+
+Includes auto update TG messages script examples, node maintenance notifications, and more
