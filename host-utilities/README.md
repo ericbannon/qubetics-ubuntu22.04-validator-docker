@@ -50,6 +50,10 @@ Samples a 10 minute window to see the top 10 most active peers for helping confi
 
 Polls the cosmovisor.log for 10 minutes to detect network stability issues, timeouts and flapping
 
+### io_watch.sh
+
+Single-run check: wait 60 s, then prints the growth, FS usage, device I/O, and Docker’s counter.
+
 ### telegram-bot folder
 
 Includes auto update TG messages script examples, node maintenance notifications, and more
