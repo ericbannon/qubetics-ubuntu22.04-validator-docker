@@ -22,11 +22,15 @@ sudo systemctl start validator-reboot.service
 
 ### performance_check.sh
 
-Runs a series of performance checks on your node including syncing status, CPU/MEM/DISK IO data, and network bottlenecks
+Runs a series of performance checks on your node including syncing status, CPU/MEM/DISK IO data, and network bottlenecks as well as validator stats and time syncs. Prints simple summary report
 
 ### p2p_health.sh
 
 Checks current p2p health
+
+### peer_scan.sh
+
+FInd the top 10 peers, and analyzes them for persistent peer reccomendations
 
 ### check_missed_range.sh
 
