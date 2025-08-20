@@ -4,10 +4,10 @@ This profile is tuned for **validators that prioritize block signing** under hig
 
 **Why this helps:**
 
-⏱️ Reduced Consensus Lag → tighter timeouts prevent long stalls
-💾 Less Disk I/O → pruning + no tx indexer = smoother commits
-🌐 Stable Networking → outbound peer cap avoids churn storms
-🛡️ Resilient to Floods → validator spends CPU on signing, not relaying spam
+* ⏱️ Reduced Consensus Lag → tighter timeouts prevent long stalls
+* 💾 Less Disk I/O → pruning + no tx indexer = smoother commits
+* 🌐 Stable Networking → outbound peer cap avoids churn storms
+* 🛡️ Resilient to Floods → validator spends CPU on signing, not relaying spam
 
 **NOTE:**
 
