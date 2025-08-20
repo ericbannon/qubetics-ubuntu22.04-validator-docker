@@ -46,16 +46,30 @@ fi
 # ✅ Start if not running
 if [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)" != "true" ]; then
   echo "🚀 Starting existing container '$CONTAINER_NAME'..."
-  docker start "$CONTAINER_NAME"
-  sleep 5
+  docker start "$CONTAINER_NAME" >/dev/null
 
-  if [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)" != "true" ]; then
-    echo "❌ Container failed to start. Printing logs:"
+  # Give Docker some time to stabilize container state
+  for i in {1..10}; do
+    sleep 2
+    state="$(docker inspect -f '{{.State.Status}}' "$CONTAINER_NAME" 2>/dev/null)"
+    if [ "$state" = "running" ]; then
+      echo "✅ Container '$CONTAINER_NAME' is running."
+      break
+    elif [ "$state" = "exited" ]; then
+      echo "❌ Container '$CONTAINER_NAME' exited immediately."
+      docker logs "$CONTAINER_NAME" --tail=100
+      exit 1
+    fi
+    echo "⏳ Waiting for container... state=$state"
+  done
+
+  if [ "$state" != "running" ]; then
+    echo "❌ Container failed to reach running state. Logs:"
     docker logs "$CONTAINER_NAME" --tail=100
     exit 1
   fi
 else
-  echo "✅ Container '$CONTAINER_NAME' is running."
+  echo "✅ Container '$CONTAINER_NAME' is already running."
 fi
 
 # ─────────────────────────────────────────────────────────
