@@ -15,7 +15,7 @@
 proxy_app = "tcp://0.0.0.0:26658"
 
 # A custom human readable name for this node
-moniker = "bannon-validator-x8"
+moniker = "<redacted>"
 
 # If this node is many blocks behind the tip of the chain, BlockSync
 # allows them to catchup quickly by downloading blocks in parallel
@@ -462,7 +462,7 @@ discard_abci_responses = true
 #   3) "psql" - the indexer services backed by PostgreSQL.
 # When "kv" or "psql" is chosen "tx.height" and "tx.hash" will always be indexed.
 [tx_index]
-indexer = "kv"
+indexer = "null"
 
 # The PostgreSQL connection configuration, the connection format:
 #   postgresql://<user>:<password>@<host>:<port>/<db>?<opts>
