@@ -32,6 +32,10 @@ Checks current p2p health
 
 FInd the top 10 peers, and analyzes them for persistent peer reccomendations
 
+### harvest_persistent_peers.sh
+
+Samples a 10 minute window to see the top 10 most active peers for helping configure persinstent peer settings in config.toml
+
 ### check_missed_range.sh
 
 Checks the last 100 block heights to confirm NIL, ABSENT, IN_SET, NOT_IN_SET details.
@@ -45,10 +49,6 @@ Examines your commit for specified block height to confirm NIL, ABSENT, IN_SET, 
 ```
 ./missed_block_analysis -H <block-height>
 ```
-
-### harvest_persistent_peers.sh
-
-Samples a 10 minute window to see the top 10 most active peers for helping configure persinstent peer settings in config.toml
 
 ### net_stability_watch.sh
 
