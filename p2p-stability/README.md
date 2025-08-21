@@ -12,7 +12,7 @@ Samples a 10 minute window to see the top 10 most active peers for helping confi
 
 ## p2p_churn.sh
 
-```INTERVAL_SEC=5 SUMMARY_SEC=30 ./netstab_all.sh```
+```INTERVAL_SEC=5 SUMMARY_SEC=30 ./p2p_churn.sh```
 
 Live samples appended to: /tmp/netstab.csv (epoch, ts, outbound, new, lost, timeout_prevote, timeout_precommit, gw_rtt_ms, gw_loss_pct, window_sec)
 
