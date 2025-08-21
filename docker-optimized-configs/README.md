@@ -27,7 +27,7 @@ It makes the following changes to `config.toml` and `app.toml`:
 timeout_propose     = "2s"
 timeout_prevote     = "1s"
 timeout_precommit   = "1s"
-timeout_commit      = "1s"
+timeout_commit      = "6s"
 skip_timeout_commit = false
 ```
 
