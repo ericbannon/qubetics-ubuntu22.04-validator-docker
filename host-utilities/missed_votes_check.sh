@@ -2,7 +2,7 @@ RPC=127.0.0.1:26657
 VALHEX=$(curl -s http://$RPC/status | jq -r '.result.validator_info.address' | tr a-z A-Z)
 
 # how many blocks to check
-N=1000
+N=200
 
 # latest height
 L=$(curl -s http://$RPC/status | jq -r '.result.sync_info.latest_block_height')
