@@ -15,7 +15,7 @@
 proxy_app = "tcp://0.0.0.0:26658"
 
 # A custom human readable name for this node
-moniker = "<redacted>"
+moniker = "bannon-validator-x8"
 
 # If this node is many blocks behind the tip of the chain, BlockSync
 # allows them to catchup quickly by downloading blocks in parallel
@@ -207,13 +207,13 @@ laddr = "tcp://0.0.0.0:26656"
 # Address to advertise to peers for them to dial. If empty, will use the same
 # port as the laddr, and will introspect on the listener to figure out the
 # address. IP and port are required. Example: 159.89.10.97:26656
-external_address = ""
+external_address = "tcp://73.3.165.55:26656"
 
 # Comma separated list of seed nodes to connect to
 seeds = ""
 
 # Comma separated list of nodes to keep persistent connections to
-persistent_peers = "f874aca4075ce71b7e0fa62f882d7bb69aed9adc@85.195.254.66:26656,41f8e8b5479374a21e69be09911a0c0dc6f41b23@49.0.247.123:26656,8db53566aa0b6447d73ad264aff918d59f0e20a4@189.1.235.160:26656,afd50019409285e303a332000e587b58584f56eb@45.10.154.78:26656,86a47dc66fa1a4117fef560c799433d392e30d51@119.12.165.118:26656,ad8e2053470a347d87f5125d54fe04d86155f7c4@159.138.134.250:26656"
+persistent_peers = "65cb0de46806c3e50395110b84d22275a29150ca@38.242.244.114:26656,f874aca4075ce71b7e0fa62f882d7bb69aed9adc@85.195.254.66:26656,41f8e8b5479374a21e69be09911a0c0dc6f41b23@49.0.247.123:26656,ad8e2053470a347d87f5125d54fe04d86155f7c4@159.138.134.250:26656"
 
 # Path to address book
 addr_book_file = "config/addrbook.json"
@@ -223,16 +223,16 @@ addr_book_file = "config/addrbook.json"
 addr_book_strict = false
 
 # Maximum number of inbound peers
-max_num_inbound_peers = 0
+max_num_inbound_peers = 1
 
 # Maximum number of outbound peers to connect to, excluding persistent peers
 max_num_outbound_peers = 20
 
 # List of node IDs, to which a connection will be (re)established ignoring any existing limits
-unconditional_peer_ids = ""
+unconditional_peer_ids = "65cb0de46806c3e50395110b84d22275a29150ca,f874aca4075ce71b7e0fa62f882d7bb69aed9adc"
 
 # Maximum pause when redialing a persistent peer (if zero, exponential backoff is used)
-persistent_peers_max_dial_period = "15s"
+persistent_peers_max_dial_period = "10m"
 
 # Time to wait before flushing messages out on the connection
 flush_throttle_timeout = "0ms"
@@ -343,8 +343,8 @@ ttl-num-blocks = 0
 # number of active connections to that group of peers is not bounded.
 # For non-persistent peers, if enabled, a value of 10 is recommended based on experimental
 # performance results using the default P2P configuration.
-experimental_max_gossip_connections_to_persistent_peers = 4
-experimental_max_gossip_connections_to_non_persistent_peers = 6
+experimental_max_gossip_connections_to_persistent_peers = 6
+experimental_max_gossip_connections_to_non_persistent_peers = 10
 
 #######################################################
 ###         State Sync Configuration Options        ###
