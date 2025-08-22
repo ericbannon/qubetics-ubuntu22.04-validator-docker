@@ -21,48 +21,40 @@ It makes the following changes to `config.toml` and `app.toml`:
 
 ### `config.toml` (Consensus / P2P / RPC)
 
-#### Consensus
-```
-[consensus]
-timeout_propose     = "2s"
-timeout_prevote     = "1s"
-timeout_precommit   = "1s"
-timeout_commit      = "6s"
-skip_timeout_commit = false
-```
+#### Summary of Enhancements
 
-* Faster consensus steps
-* Keeps validator responsive when blocks are slow to propose
+##### P2P
+* max_num_inbound_peers = 24, max_num_outbound_peers = 12, max_num_peers = 36
+* send_rate/recv_rate = 10 MiB/s
+* peer_gossip_sleep_duration = "80ms", peer_query_maj23_sleep_duration = "1.5s"
+* max_packet_msg_payload_size = 1024
+* handshake_timeout = "10s", dial_timeout = "3s", persistent_peers_max_dial_period = "20s"
+* flush_throttle_timeout = "25ms", allow_duplicate_ip = true
 
-#### Mempool
-```
-[mempool]
-size          = 2000
-cache_size    = 50000
-max_tx_bytes  = 524288        # 512 KiB
-max_txs_bytes = 268435456     # 256 MiB
-recheck       = false
-```
+1. Keeps you well‑connected on a ~40‑peer net but avoids excessive per‑peer goroutine load.
+2. Less chatty than 10ms, still responsive; reduces wakeups on a small core budget.
+3. Avoids giant packets hogging a core on serialization.
+4. Fail fast on flappers; churn keeps moving.
+5. Smoother send buffering; helpful if several peers share NAT.
 
-* Caps gossip to reduce CPU spikes during spam floods
-* Keeps enough headroom for valid txs without overwhelming RAM
 
-#### TX Indexer
-```
-[tx-index]
-indexer = "null"
-```
-* Disables tx indexing → lighter disk I/O at commit
-* Use kv only if you need q tx <hash> or explorer queries
+##### Consensus
+* timeout_commit = "2s" (from 6s), with propose/pre‑vote/pre‑commit tuned for steady cadence
+* create_empty_blocks = false
 
-#### P2P
-```
-pex = true
-```
+1. Cuts useless consensus churn between bursts.
+2. This raises TPS without pushing too hard on cores used
 
-* Still discover peers if persistent peers drop
-* Outbound peers capped to 20–30 for stability
-* Inbound peers optional (disable if running with sentries)
+##### RPC
+* rpc.max_open_connections = 1024
+
+1. Limits FD overcommit.
+
+##### Mempool
+* version stays = "v0" for raw throughput
+* size = 10000, cache_size = 16000
+* max_txs_bytes = 512 MiB (balanced for memory on a small box)
+* ttl-num = 0, ttl-duration = "0s"
 
 ### `app.toml` (Application Layer)
 
@@ -70,7 +62,7 @@ This configuration file controls the **application-level settings** of the Qubet
 
 It is tuned for the **Lean Profile**, optimized for block signing stability under heavy network load.
 
-### Key Settings
+#### Summary of Enhancements
 
 ⚠️ **Disclaimer**
 
@@ -78,7 +70,7 @@ This app.toml profile is optimized for validators that only need to sign blocks 
 It trades off query functionality and historical data retention.
 Use it only if validator performance is your priority.
 
-#### Mempool
+##### Mempool
 ```
 [mempool]
 max-txs = 2000
@@ -88,22 +80,14 @@ max-txs = 2000
 * Prevents unbounded growth inside the Cosmos SDK layer
 * Matches the consensus mempool limit for consistency
 
-#### Pruning
 
-```
-[pruning]
-pruning             = "custom"
-pruning-keep-recent = "100"
-pruning-keep-every  = "0"
-pruning-interval    = "10"
-```
+##### Pruning
 
-* Keeps only the last 100 states
-* Prunes aggressively every 10 blocks
-* Minimizes disk growth on NVMe storage
-* Best for validators only (not archival or analytics nodes)
+pruning = "custom", pruning-keep-recent = "2000", pruning-keep-every = "0", pruning-interval = "50"
 
-#### API & gRPC
+* Pruning tightened to keep on‑disk churn sane:
+
+##### API & gRPC
 ```
 [api]
 swagger = false
@@ -120,7 +104,7 @@ enable = true
 * grpc.enable = true → lightweight, efficient local monitoring possible
 * grpc-web.enable = false → reduces surface area, saves a bit of CPU, keeps validator lean
 
-#### Minimum Gas Price
+##### Minimum Gas Price
 
 ```
 minimum-gas-prices = "0.025tics"
@@ -128,3 +112,7 @@ minimum-gas-prices = "0.025tics"
 
 * Rejects 0-fee spam transactions from entering the mempool
 * Ensures validator resources aren’t wasted processing junk txs
+
+##### Snapshots
+
+Snapshots off for pure performance runs: snapshot-interval = 0, snapshot-keep-recent = 2
