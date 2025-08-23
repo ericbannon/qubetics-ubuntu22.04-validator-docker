@@ -1,0 +1,21 @@
+[Unit]
+Description=Run validator-startup.sh whenever validator-node container (re)starts
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+
+[Service]
+Type=simple
+User=admin
+Group=docker
+RuntimeDirectory=validator-node-watch
+RuntimeDirectoryMode=0755
+ExecStartPre=/bin/sh -lc 'until docker info >/dev/null 2>&1; do sleep 2; done'
+ExecStart=/usr/local/bin/watch-validator-node.sh
+Restart=always
+RestartSec=2s
+StandardOutput=journal
+StandardError=journal
+WorkingDirectory=/home/admin/scripts
+
+[Install]
+WantedBy=multi-user.target

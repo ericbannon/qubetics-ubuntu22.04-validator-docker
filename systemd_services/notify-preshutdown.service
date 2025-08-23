@@ -1,0 +1,19 @@
+[Unit]
+Description=Send Telegram notice right before shutdown/reboot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=admin
+WorkingDirectory=/home/admin/scripts
+EnvironmentFile=-/etc/default/telegram.env
+ExecStart=/bin/true
+ExecStop=/bin/bash -lc '/home/admin/scripts/node-maintenance-tg.sh --pre-shutdown'
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
