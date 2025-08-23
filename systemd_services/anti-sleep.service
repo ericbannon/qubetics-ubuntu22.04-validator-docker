@@ -1,0 +1,11 @@
+[Unit]
+Description=Block system sleep while validator container is running
+After=docker.service
+Requires=docker.service
+[Service]
+Type=simple
+ExecStart=/bin/sh -c 'exec systemd-inhibit --what=sleep --who="validator" --why="validator running" docker wait qubetics'
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=multi-user.target

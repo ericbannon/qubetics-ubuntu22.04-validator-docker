@@ -16,7 +16,7 @@ ENV UPGRADEVER=v1.0.2
 # ENV DAEMON_HOME=/mnt/nvme/qubetics
 
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
     curl \
     libssl3 \
     libcurl4 \

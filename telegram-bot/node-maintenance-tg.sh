@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# --- Telegram from .env ONLY ---
-TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
-TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-}"
-if [ -f "/home/admin/scripts/.env" ]; then
-  set -a
-  # shellcheck disable=SC1091
-  source "/home/admin/scripts/.env"
-  set +a
+# --- Load Telegram env: prefer /etc/default, fallback to local .env ---
+if [ -r /etc/default/telegram.env ]; then
+  set -a; . /etc/default/telegram.env; set +a
+elif [ -r /home/admin/scripts/.env ]; then
+  set -a; . /home/admin/scripts/.env; set +a
 fi
-: "${TELEGRAM_BOT_TOKEN:?Missing TELEGRAM_BOT_TOKEN in /home/admin/scripts/.env or env}"
-: "${TELEGRAM_CHAT_ID:?Missing TELEGRAM_CHAT_ID in /home/admin/scripts/.env or env}"
+: "${TELEGRAM_BOT_TOKEN:?Missing TELEGRAM_BOT_TOKEN in env}"
+: "${TELEGRAM_CHAT_ID:?Missing TELEGRAM_CHAT_ID in env}"
 
 # --- Fixed config (yours) ---
 NODE_RPC="http://localhost:26657"
@@ -23,20 +20,19 @@ VALCONS_ADDR="qubeticsvalcons1jpprhtglnlp7f65m526h5rlpf69z0k09254veh"
 NODE_NAME="Block Dock Validator"
 
 # Health check tuning
-MAX_WAIT_TIME=${MAX_WAIT_TIME:-300}   # seconds for container to become healthy/running
-CHECK_INTERVAL=${CHECK_INTERVAL:-5}   # seconds between checks
-ETA_SECONDS=${ETA_SECONDS:-90}        # requested ETA before blocks start writing
-SYNC_DEADLINE=${SYNC_DEADLINE:-420}   # extra time to detect block movement after ETA
+MAX_WAIT_TIME=${MAX_WAIT_TIME:-300}   # secs for container to become healthy/running
+CHECK_INTERVAL=${CHECK_INTERVAL:-5}   # secs between checks
+ETA_SECONDS=${ETA_SECONDS:-90}        # wait after container ready before expecting blocks
+SYNC_DEADLINE=${SYNC_DEADLINE:-420}   # extra time to confirm block movement
 
 send_telegram() {
   local msg="$1"
   curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
     -d chat_id="${TELEGRAM_CHAT_ID}" \
     -d parse_mode="Markdown" \
-    --data-urlencode text="$msg" > /dev/null || true
+    --data-urlencode text="$msg" >/dev/null || true
 }
 
-# Snapshots for message footers
 snapshot_status() {
   local peers="n/a" height="n/a" catching="n/a"
   if curl -fsS "${NODE_RPC}/net_info" -o /tmp/ni.json 2>/dev/null; then
@@ -49,18 +45,9 @@ snapshot_status() {
   echo "Peers: ${peers} | Height: ${height} | CatchingUp: ${catching}"
 }
 
-get_height() {
-  curl -fsS "${NODE_RPC}/status" 2>/dev/null \
-    | jq -r '.result.sync_info.latest_block_height' 2>/dev/null || echo ""
-}
-get_catching() {
-  curl -fsS "${NODE_RPC}/status" 2>/dev/null \
-    | jq -r '.result.sync_info.catching_up' 2>/dev/null || echo ""
-}
-get_peers() {
-  curl -fsS "${NODE_RPC}/net_info" 2>/dev/null \
-    | jq -r '.result.peers | length' 2>/dev/null || echo ""
-}
+get_height()   { curl -fsS "${NODE_RPC}/status" 2>/dev/null | jq -r '.result.sync_info.latest_block_height' 2>/dev/null || echo ""; }
+get_catching() { curl -fsS "${NODE_RPC}/status" 2>/dev/null | jq -r '.result.sync_info.catching_up'        2>/dev/null || echo ""; }
+get_peers()    { curl -fsS "${NODE_RPC}/net_info" 2>/dev/null | jq -r '.result.peers | length'              2>/dev/null || echo ""; }
 
 wait_for_docker() {
   local tries=0
@@ -69,9 +56,9 @@ wait_for_docker() {
   done
 }
 
-# Wait until we observe block movement (height increases)
+# Wait until we observe block movement (height increases twice)
 wait_for_block_progress() {
-  local deadline_secs="$1"   # how long to wait for blocks to start moving
+  local deadline_secs="$1"
   local start_height="$(get_height)"
   [[ -z "$start_height" || "$start_height" == "null" ]] && start_height=0
 
@@ -83,24 +70,20 @@ wait_for_block_progress() {
     local h="$(get_height)"
     [[ -z "$h" || "$h" == "null" ]] && continue
     if [[ "$h" =~ ^[0-9]+$ ]] && (( h > last_height )); then
-      # extra confirmation: see two increments within a short window
       sleep "$CHECK_INTERVAL"
       local h2="$(get_height)"; [[ -z "$h2" || "$h2" == "null" ]] && h2="$h"
       if [[ "$h2" =~ ^[0-9]+$ ]] && (( h2 > h )); then
-        echo "$h2"
-        return 0
+        echo "$h2"; return 0
       fi
       last_height="$h"
     fi
   done
-  echo "$last_height"
-  return 1
+  echo "$last_height"; return 1
 }
 
 boot_flow() {
   wait_for_docker
 
-  # Initial maintenance notice (unchanged)
   send_telegram "⚙️ *${NODE_NAME} - Node Maintenance Notice*
 
 🔄 Rebooting node container: \`${NODE_NAME}\`
@@ -140,8 +123,7 @@ Check logs and validator sync manually.
     exit 2
   fi
 
-  # NEW: Node online + Cosmovisor starting (ETA 90s)
-  local peers_now="$(get_peers)"; [[ -z "$peers_now" || "$peers_now" == "null" ]] && peers_now="n/a"
+  local peers_now="$(get_peers)";   [[ -z "$peers_now"   || "$peers_now"   == "null" ]] && peers_now="n/a"
   local height_now="$(get_height)"; [[ -z "$height_now" || "$height_now" == "null" ]] && height_now="n/a"
   send_telegram "✅ *${NODE_NAME} is Back Online*
 
@@ -152,10 +134,8 @@ ${NODE_NAME} is starting *Cosmovisor*.
 $(snapshot_status)
 "
 
-  # Give Cosmovisor a head start exactly as requested (ETA)
   sleep "$ETA_SECONDS"
 
-  # Then wait for actual block movement (writing again)
   local final_height
   if final_height="$(wait_for_block_progress "$SYNC_DEADLINE")"; then
     local catching="$(get_catching)"
@@ -166,7 +146,6 @@ Height: *${final_height}*  |  Peers: *${peers:-n/a}*  |  CatchingUp: *${catching
 
 All systems nominal. 🚀"
   else
-    # No movement detected within deadline — warn but include snapshot
     send_telegram "⚠️ *${NODE_NAME} Post‑Start Check*
 
 Cosmovisor started *${ETA_SECONDS}s* ago, but block movement was not confirmed within *${SYNC_DEADLINE}s*.

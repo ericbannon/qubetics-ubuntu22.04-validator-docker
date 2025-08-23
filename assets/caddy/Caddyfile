@@ -1,0 +1,37 @@
+# /etc/caddy/Caddyfile
+node.bannon-validator-tics.com {
+	encode zstd gzip
+
+	# --- OPTIONAL: Basic Auth for all paths ---
+	# To enable, generate a bcrypt hash: `caddy hash-password --plaintext 'YourStrongSecret'`
+	# then uncomment the block below and paste the hash.
+	# basicauth /* {
+	#     ericbannon $2y$10$REPLACE_WITH_BCRYPT_HASH
+	# }
+
+	# --- OPTIONAL: Allow-list only "safe" RPC endpoints ---
+	@safe {
+		path /status* /net_info* /health* /abci_info* /block* /block_results* /block_by_hash* /block_by_height* /validators* /genesis* /tx_search* /tx* /broadcast_tx_* /commit* /consensus_params* /consensus_state* /dump_consensus_state*
+	}
+	# default deny (comment this stanza to allow all RPC paths)
+	handle {
+		respond "Forbidden" 403
+	}
+	handle @safe {
+		reverse_proxy 127.0.0.1:26657 {
+			transport http {
+				read_buffer  64MB
+				write_buffer 64MB
+				response_header_timeout 30s
+				dial_timeout            5s
+			}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# Security headers (lightweight)
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+	}
+}

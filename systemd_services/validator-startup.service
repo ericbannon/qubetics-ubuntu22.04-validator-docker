@@ -1,21 +1,20 @@
 # /etc/systemd/system/validator-startup.service
 [Unit]
-Description=Start validator node with Cosmovisor on boot
-# Ensure Docker and binfmt are ready first
-Requires=docker.service binfmt-amd64.service
-After=network-online.target docker.service binfmt-amd64.service
-Wants=network-online.target
-# Make sure your data mount is available before running
+Description=Start validator node (Docker or Cosmovisor) on boot
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+Requires=docker.service
 RequiresMountsFor=/mnt/nvme/qubetics
+ConditionPathExists=/home/admin/scripts/validator-startup.sh
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/home/admin/scripts/validator-startup.sh
+User=admin
 WorkingDirectory=/home/admin
+ExecStart=/home/admin/scripts/validator-startup.sh
 StandardOutput=journal
 StandardError=journal
-User=root
 
 [Install]
 WantedBy=multi-user.target

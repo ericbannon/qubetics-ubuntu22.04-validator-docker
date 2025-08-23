@@ -25,22 +25,22 @@ fi
 if ! docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
   echo "📦 Container '$CONTAINER_NAME' not found. Creating it..."
   docker run -dit \
-    --platform=linux/amd64 \
-    --name "$CONTAINER_NAME" \
-    --privileged \
-    --network host \
-    --cpus="$(nproc)" \
-    --memory="0" \
-    --restart unless-stopped \
-    -p 26656:26656 \
-    -p 26657:26657 \
-    -v /mnt/nvme:/mnt/nvme \
-    -e DAEMON_NAME=qubeticsd \
-    -e DAEMON_HOME="$DAEMON_HOME" \
-    -e DAEMON_ALLOW_DOWNLOAD_BINARIES=false \
-    -e DAEMON_RESTART_AFTER_UPGRADE=true \
-    -e DAEMON_LOG_BUFFER_SIZE=512 \
-    "$VALIDATOR_IMAGE"
+  --platform=linux/amd64 \
+  --name "$CONTAINER_NAME" \
+  --privileged \
+  --network host \
+  --cpus="16" \
+  --cpuset-cpus="0-15" \
+  --ulimit nofile=65536:65536 \
+  --ulimit memlock=-1 \
+  --cap-add sys_nice \
+  -v /mnt/nvme:/mnt/nvme \
+  -e DAEMON_NAME=qubeticsd \
+  -e DAEMON_HOME="$DAEMON_HOME" \
+  -e DAEMON_ALLOW_DOWNLOAD_BINARIES=false \
+  -e DAEMON_RESTART_AFTER_UPGRADE=true \
+  -e DAEMON_LOG_BUFFER_SIZE=512 \
+  "$VALIDATOR_IMAGE"
 fi
 
 # ✅ Start if not running
