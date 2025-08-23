@@ -58,7 +58,6 @@ Not “instanode” or one-click. We run our own configs and share learnings. Ex
 * Sets ENV for all required PATHS
 * Leverages a modified qubetics_ubuntu_node.sh script that removes pre-requisite installations
 * Modifies the qubetics_ubuntu_node.sh script to start the qubeticsd directly from cosmovisor since systemctl is not supported in Docker
-* Can be run as amd64 on any ARM system with qemu emulation enabled
 * Creates a cosmovisor.log for viewing the block indexing in the background and to troubleshoot errors
 * Setup script sets fase fees for best network performance (Per Qubetics reccomendation)
 * Reboot systemd service for auto-start and upgrades 
@@ -115,53 +114,32 @@ Once block 75000 is reached, it switches to the upgrade binary in:
 
 #### Run the Docker Container in the Background 🧪
 
-If running on an ARM based system:
-
 ```
-docker run -dit \
+  docker run -dit \
   --platform=linux/amd64 \
-  --name validator-node \
-  --restart unless-stopped \
+  --name "$CONTAINER_NAME" \
   --privileged \
   --network host \
+  --cpus="16" \
+  --cpuset-cpus="0-15" \
+  --ulimit nofile=65536:65536 \
+  --ulimit memlock=-1 \
+  --cap-add sys_nice \
   -v /mnt/nvme:/mnt/nvme \
   -e DAEMON_NAME=qubeticsd \
-  -e DAEMON_HOME=/mnt/nvme/qubetics \
+  -e DAEMON_HOME="$DAEMON_HOME" \
   -e DAEMON_ALLOW_DOWNLOAD_BINARIES=false \
   -e DAEMON_RESTART_AFTER_UPGRADE=true \
   -e DAEMON_LOG_BUFFER_SIZE=512 \
-  bannimal/tics-validator-node:latest
-```
-
-If already running on x86 platform:
-
-```
-docker run -dit \
-  --name validator-node \
-  --restart unless-stopped \
-  --privileged \
-  --network host \
-  -v /mnt/nvme:/mnt/nvme \
-  -e DAEMON_NAME=qubeticsd \
-  -e DAEMON_HOME=/mnt/nvme/qubetics \
-  -e DAEMON_ALLOW_DOWNLOAD_BINARIES=false \
-  -e DAEMON_RESTART_AFTER_UPGRADE=true \
-  -e DAEMON_LOG_BUFFER_SIZE=512 \
-  bannimal/tics-validator-node:latest
+  "$VALIDATOR_IMAGE"
 ``` 
 
-**IMPORTANT** - If you completely remove the docker container from the node, you will need to specify the backup directory when re-running your docker run command for the new container. You can do this by adding the following env variable to your docker run command (replace with current month and day)
-
-```
- -e DAEMON_DATA_BACKUP_DIR=/mnt/nvme/qubetics/data-backup-2025-7-27 \
-  bannimal/tics-validator-node:v1.0.1
-```
 
 **Reccomended** If you are running an independent node for the purpose of validation and want the docker container to have system access to all CPUs and RAM, please include the following in your run command:
 
 ```
     -cpus="$(nproc)" \
-    --memory="0" \
+    --ulimit memlock=-1 \\
 ```
 
 #### Install Qubetics Validator Node
