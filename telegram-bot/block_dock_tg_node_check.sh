@@ -4,6 +4,7 @@
 # - Gossip totals over window + MB/s rates
 # - Live 5s RX/TX sample
 # - Auto IFACE + background sampler (10s) feeding /var/tmp JSONL
+# - Writes /var/www/tics-blockdock/stats.json for your website
 # Deps: docker, jq, bc, curl, md5sum, awk, ping, python3, iproute2
 # Cron example (every 10 min):
 # */10 * * * * IFACE=wlp4s0 . /etc/default/telegram.env; /home/admin/scripts/blockdock_updater_merged.sh >> /home/admin/scripts/blockdock_updater.log 2>&1
@@ -72,6 +73,24 @@ human_bytes() {
   printf "%s%s" "$b" "${s[$d]}"
 }
 
+# --- CPU helpers (system %, process %, RSS, load1) ---
+cpu_total() { awk '/^cpu /{sum=0; for(i=2;i<=NF;i++) sum+=$i; print sum}' /proc/stat; }
+cpu_idle()  { awk '/^cpu /{print $5}' /proc/stat; }
+cpu_usage_pct_system() {
+  local t1 i1 t2 i2 dt di
+  t1=$(cpu_total); i1=$(cpu_idle)
+  sleep 0.5
+  t2=$(cpu_total); i2=$(cpu_idle)
+  dt=$((t2 - t1)); di=$((i2 - i1))
+  if [ "$dt" -gt 0 ]; then
+    awk -v dt="$dt" -v di="$di" 'BEGIN{ printf "%.1f", (100.0 * (dt - di) / dt) }'
+  else
+    echo "0.0"
+  fi
+}
+proc_metric() { ps -p "$1" -o "$2"= 2>/dev/null | awk '{$1=$1; print}'; }
+rss_bytes() { awk '/^VmRSS:/{print $2*1024}' /proc/"$1"/status 2>/dev/null || echo 0; }
+
 send_telegram_alert() {
   local msg="$1"
   local resp body code
@@ -100,16 +119,16 @@ if [[ -z "${COSMO_LOG:-}" ]]; then
 fi
 : "${COSMO_LOG:=/mnt/nvme/qubetics/cosmovisor.log}"
 
-# === IFACE detection (env override -> default route -> first non-virtual -> eth0) ===
+# === IFACE detection ===
 if [[ -z "${IFACE:-}" ]]; then
   IFACE="$(ip route show default 2>/dev/null | awk '/^default/ {for(i=1;i<=NF;i++) if ($i=="dev") {print $(i+1); exit}}')"
 fi
 if [[ -z "${IFACE:-}" ]]; then
   IFACE="$(ls -1 /sys/class/net | grep -Ev '^(lo|docker|veth|br-)' | head -n1)"
 fi
-: "${IFACE:=wlp4s0}"   # your known Wi‑Fi NIC; change to enpXsY if you wire up Ethernet
+: "${IFACE:=wlp4s0}"
 
-# === Background IFACE sampler (10s) writing JSONL; single instance guarded by lock+PID ===
+# === Background IFACE sampler (10s) writing JSONL ===
 SAMPLE_PERIOD="${SAMPLE_PERIOD:-10}"
 STATE_DIR="${STATE_DIR:-/var/tmp}"
 state_file="${STATE_DIR}/validator_ifstats_${IFACE}.jsonl"
@@ -157,7 +176,7 @@ PY
 EOF
 }
 
-# === 3m/10m Metrics Collector (uses sampler file + fallbacks) ===
+# === 3m/10m Metrics Collector ===
 compute_3m_metrics() {
   local ts_now ts_cutoff
   ts_now="$(now_ts)"; ts_cutoff="$(( ts_now - WINDOW_SECS ))"
@@ -206,7 +225,6 @@ compute_3m_metrics() {
 
   lines_cnt="$(wc -l < "${state_file}" 2>/dev/null || echo 0)"
   if [[ "${lines_cnt}" -lt 2 ]]; then
-    # inline quick bootstrap if sampler is fresh
     for _ in 1 2 3; do
       t="$(now_ts)"
       b1="$(cat /sys/class/net/${IFACE}/statistics/rx_bytes 2>/dev/null || echo)"
@@ -341,10 +359,9 @@ recent_fractions=$(echo "$slashes_json" | jq -r '[.slashes[-3:][]?.fraction] | m
 
 # === P2P/gateway + gossip ===
 compute_3m_metrics
-# quick live 5s throughput on the same IFACE
 quick_iface_sample "$IFACE" 5
 
-# === Message ===
+# === Message (Telegram) ===
 msg="📡 *Block Dock Validator Node Health Check (every 10 minutes)*
 $jailed_status
 $sync_status
@@ -379,10 +396,67 @@ msg+="
 msg+="
 📅 Updated: \`$(TZ=America/Denver date)\`)"
 
+# === Write stats.json for the website (no "catching_up", includes delegators + CPU) ===
+OUT_JSON="/var/www/tics-blockdock/stats.json"
+TMP_JSON="${OUT_JSON}.tmp"
+
+system_cpu_pct="$(cpu_usage_pct_system)"
+load1="$(awk '{print $1}' /proc/loadavg 2>/dev/null || echo 0)"
+proc_cpu_pct=null
+proc_rss_bytes=null
+if pid=$(pgrep -x qubeticsd | head -n1); then
+  proc_cpu_pct="$(proc_metric "$pid" %cpu | awk '{printf "%.1f",$1+0}' 2>/dev/null || echo null)"
+  proc_rss_bytes="$(rss_bytes "$pid")"
+fi
+
+peers_total_now=$(( ${inbound_now:-0} + ${outbound_peers:-0} ))
+
+# === Write stats.json (block/peers/CPU) ===
+jq -n \
+  --arg now "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+  --arg height "${latest_block:-0}" \
+  --arg inbound_now "${inbound_now:-0}" \
+  --arg outbound_now "${outbound_peers:-0}" \
+  --arg total_now "${peers_total_now:-0}" \
+  --arg system_cpu_pct "${system_cpu_pct:-0.0}" \
+  --arg load1 "${load1:-0}" \
+  --argjson proc_cpu_pct ${proc_cpu_pct:-null} \
+  --argjson proc_rss_bytes ${proc_rss_bytes:-null} \
+'{
+  generated_at: $now,
+  latest_block_height: ($height|tonumber? // 0),
+  peers: {
+    inbound_now: ($inbound_now|tonumber? // 0),
+    outbound_now: ($outbound_now|tonumber? // 0),
+    total_now: ($total_now|tonumber? // 0)
+  },
+  cpu: {
+    system_pct: ($system_cpu_pct|tonumber? // 0.0),
+    loadavg_1m: ($load1|tonumber? // 0.0),
+    process_pct: $proc_cpu_pct,
+    process_rss_bytes: $proc_rss_bytes
+  }
+}' > "$TMP_JSON" && mv "$TMP_JSON" "$OUT_JSON" && chmod 644 "$OUT_JSON"
+
+# === Write staking-focused stats2.json (stake, self-delegation, delegators) ===
+OUT_JSON2="/var/www/tics-blockdock/stats2.json"
+TMP_JSON2="${OUT_JSON2}.tmp"
+
+jq -n \
+  --arg now "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+  --arg total_stake "$total_stake_tics_fmt" \
+  --arg self_stake "$self_tics" \
+  --arg delegators "${delegator_count:-0}" \
+'{
+  generated_at: $now,
+  total_stake_tics: $total_stake,
+  self_delegated_tics: $self_stake,
+  delegators_count: ($delegators|tonumber? // 0)
+}' > "$TMP_JSON2" && mv "$TMP_JSON2" "$OUT_JSON2" && chmod 644 "$OUT_JSON2"
+
 # === De-dupe + send ===
 new_hash=$(echo "$msg" | md5sum | awk '{print $1}')
 prev_hash=$(cat "$ALERT_FILE" 2>/dev/null || true)
-
 if [ "$new_hash" != "$prev_hash" ]; then
   if ! send_telegram_alert "$msg"; then
     exit 1

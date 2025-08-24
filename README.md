@@ -93,7 +93,7 @@ Build your own docker image as an amd64 image for x86 usage (ARM is not currentl
   - TCP 443 (HTTPS)
   - Optional: TCP 80 (redirect)
 
-- For enhanced security, you do not need to open this ports if you plan to limit inbound connections and only use outbound peers behind you NAT. This is more secure when using a private serber
+- For enhanced security, you do not need to open any ports besides 26656 if you plan to use inbound & outbound peering without accessing the Validator Dashboard. This is more secure when using a private server
 
 **IMPORTANT**: This assumes that you have mounted your desired storage partition as /mnt/nvme/ on your host system. If you have changed this, then your ubuntu setup script home directory will need to be changed accordingly.
 
