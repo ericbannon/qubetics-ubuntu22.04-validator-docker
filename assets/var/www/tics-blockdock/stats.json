@@ -1,0 +1,15 @@
+{
+  "generated_at": "2025-08-24T20:41:28Z",
+  "latest_block_height": 979097,
+  "peers": {
+    "inbound_now": 5,
+    "outbound_now": 39,
+    "total_now": 44
+  },
+  "cpu": {
+    "system_pct": 0.1,
+    "loadavg_1m": 1.80,
+    "process_pct": 22.9,
+    "process_rss_bytes": 2593898496
+  }
+}
