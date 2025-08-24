@@ -1,35 +1,31 @@
-# /etc/systemd/system/qubetics-alert.service
 [Unit]
 Description=Qubetics missed block Telegram alert
-Wants=network-online.target docker.service
 After=network-online.target docker.service
-# If the script reads from NVMe data, wait for it:
-RequiresMountsFor=/mnt/nvme/qubetics
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=admin
+Group=admin
+SupplementaryGroups=docker
+
+# Use a directory that is guaranteed accessible
 WorkingDirectory=/home/admin/scripts
-# Telegram creds here (adjust/add more env files if needed)
+
+# Provide env and fail early if it's missing
 EnvironmentFile=/etc/default/telegram.env
-# Optional extra ENV for your script:
-# Environment=CONTAINER_NAME=qubetics
-# Environment=CHECK_INTERVAL=60
-# Ensure common CLI tools are found
-Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/bin
+ExecStartPre=/usr/bin/test -r /etc/default/telegram.env
 
-ExecStart=/usr/bin/env bash -c '/home/admin/scripts/alert_missed_blocks.sh >> /home/admin/scripts/missed_blocks.log 2>&1'
-Restart=on-failure
+# Call bash directly (avoid /usr/bin/env to keep logs simple)
+ExecStart=/bin/bash /home/admin/scripts/alert_missed_blocks.sh
+
+Restart=always
 RestartSec=5
-TimeoutStopSec=15
-# Send SIGINT first so a loop can exit cleanly
-KillSignal=SIGINT
+StandardOutput=journal
+StandardError=journal
 
-# (nice-to-have) security hardening for a log-scraping script:
-NoNewPrivileges=yes
-ProtectSystem=full
-ProtectHome=yes
-PrivateTmp=yes
+# Make sure no global hardening blocks /home (remove if you had these elsewhere)
+# ProtectHome=false
 
 [Install]
 WantedBy=multi-user.target
