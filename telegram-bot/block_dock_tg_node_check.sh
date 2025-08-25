@@ -402,61 +402,86 @@ msg+="
 msg+="
 📅 Updated: \`$(TZ=America/Denver date)\`)"
 
-# === Write stats.json (block/peers/CPU) ===
-OUT_JSON="/var/www/tics-blockdock/stats.json"
-TMP_JSON="${OUT_JSON}.tmp"
+# === Write missed-stats.json (running tally since baseline height) ===
+OUT_JSON3="/var/www/tics-blockdock/missed-stats.json"
+TMP_JSON3="${OUT_JSON3}.tmp"
 
-system_cpu_pct="$(cpu_usage_pct_system)"
-load1="$(awk '{print $1}' /proc/loadavg 2>/dev/null || echo 0)"
-proc_cpu_pct=null
-proc_rss_bytes=null
-if pid=$(pgrep -x qubeticsd | head -n1); then
-  proc_cpu_pct="$(proc_metric "$pid" %cpu | awk '{printf "%.1f",$1+0}' 2>/dev/null || echo null)"
-  proc_rss_bytes="$(rss_bytes "$pid")"
+# ---- Load baseline settings from JSON (with sensible fallbacks) ----
+BASELINE_FILE="/var/www/tics-blockdock/missed-baseline.json"
+BASELINE_HEIGHT=""
+BASELINE_LABEL=""
+
+if [ -r "$BASELINE_FILE" ]; then
+  BASELINE_HEIGHT="$(jq -r '.baseline_height // empty' "$BASELINE_FILE" 2>/dev/null)"
+  BASELINE_LABEL="$(jq -r '.label // empty' "$BASELINE_FILE" 2>/dev/null)"
 fi
-peers_total_now=$(( ${inbound_now:-0} + ${outbound_peers:-0} ))
+# Fallbacks if JSON missing / malformed
+: "${BASELINE_HEIGHT:=982750}"
+: "${BASELINE_LABEL:=Hardware Upgrade Baseline}"
 
+# ---- State for persistent tallying ----
+mkdir -p /var/tmp
+TALLY_FILE="/var/tmp/missed-tally.state"     # our running tally (integer)
+PREV_MISSED_FILE="/var/tmp/missed-prev.state" # last on-chain counter snapshot
+
+# Load current tally (defaults to 0)
+tally_count=0
+if [ -r "$TALLY_FILE" ]; then
+  tally_count="$(cat "$TALLY_FILE" 2>/dev/null || echo 0)"
+fi
+
+# Load previous missed counter snapshot (if any)
+prev_missed=""
+if [ -r "$PREV_MISSED_FILE" ]; then
+  prev_missed="$(cat "$PREV_MISSED_FILE" 2>/dev/null || true)"
+fi
+
+# Ensure numeric for current on-chain counter
+missed_now="${missed_blocks:-}"
+if ! [[ "$missed_now" =~ ^[0-9]+$ ]]; then
+  missed_now=""
+fi
+
+# First run: seed previous snapshot; do NOT change tally
+if [ -z "$prev_missed" ] && [ -n "$missed_now" ]; then
+  echo "$missed_now" > "$PREV_MISSED_FILE"
+  prev_missed="$missed_now"
+fi
+
+# If the on-chain counter increased and we're past the baseline height,
+# add only the positive delta to our persistent tally
+if [ -n "$missed_now" ] && [ -n "$prev_missed" ]; then
+  if (( missed_now > prev_missed )); then
+    delta=$(( missed_now - prev_missed ))
+    if (( latest_block >= BASELINE_HEIGHT )); then
+      tally_count=$(( tally_count + delta ))
+      echo "$tally_count" > "$TALLY_FILE"
+    fi
+    # Update snapshot regardless
+    echo "$missed_now" > "$PREV_MISSED_FILE"
+  elif (( missed_now < prev_missed )); then
+    # Counter shrank (e.g., node switch/rollback) — just resync snapshot; do not decrement tally
+    echo "$missed_now" > "$PREV_MISSED_FILE"
+  fi
+fi
+
+# Emit JSON for the panel
 jq -n \
   --arg now "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
   --arg height "${latest_block:-0}" \
-  --arg inbound_now "${inbound_now:-0}" \
-  --arg outbound_now "${outbound_peers:-0}" \
-  --arg total_now "${peers_total_now:-0}" \
-  --arg system_cpu_pct "${system_cpu_pct:-0.0}" \
-  --arg load1 "${load1:-0}" \
-  --argjson proc_cpu_pct ${proc_cpu_pct:-null} \
-  --argjson proc_rss_bytes ${proc_rss_bytes:-null} \
+  --arg validator "${target_addr:-$VALCONS_ADDR}" \
+  --arg tally "$tally_count" \
+  --arg baseline_h "$BASELINE_HEIGHT" \
+  --arg baseline_label "$BASELINE_LABEL" \
 '{
   generated_at: $now,
   latest_block_height: ($height|tonumber? // 0),
-  peers: {
-    inbound_now: ($inbound_now|tonumber? // 0),
-    outbound_now: ($outbound_now|tonumber? // 0),
-    total_now: ($total_now|tonumber? // 0)
-  },
-  cpu: {
-    system_pct: ($system_cpu_pct|tonumber? // 0.0),
-    loadavg_1m: ($load1|tonumber? // 0.0),
-    process_pct: $proc_cpu_pct,
-    process_rss_bytes: $proc_rss_bytes
-  }
-}' > "$TMP_JSON" && mv "$TMP_JSON" "$OUT_JSON" && chmod 644 "$OUT_JSON"
-
-# === Write staking-focused stats2.json (stake, self-delegation, delegators) ===
-OUT_JSON2="/var/www/tics-blockdock/stats2.json"
-TMP_JSON2="${OUT_JSON2}.tmp"
-
-jq -n \
-  --arg now "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
-  --arg total_stake "$total_stake_tics_fmt" \
-  --arg self_stake "$self_tics" \
-  --arg delegators "${delegator_count:-0}" \
-'{
-  generated_at: $now,
-  total_stake_tics: $total_stake,
-  self_delegated_tics: $self_stake,
-  delegators_count: ($delegators|tonumber? // 0)
-}' > "$TMP_JSON2" && mv "$TMP_JSON2" "$OUT_JSON2" && chmod 644 "$OUT_JSON2"
+  validator_consensus_address: $validator,
+  missed_blocks_tally: ($tally|tonumber? // 0),
+  baseline_from_height: ($baseline_h|tonumber? // 0),
+  baseline_label: $baseline_label,
+  note: "Running tally of missed blocks since baseline height (independent of floating missed counter)."
+}' > "$TMP_JSON3" && mv "$TMP_JSON3" "$OUT_JSON3" && chmod 644 "$OUT_JSON3"
 
 # === Write missed-stats.json (delta since cutoff) ===
 # --- Write missed-stats.json (missed since cutoff/baseline) ---
