@@ -473,10 +473,12 @@ if [ -r "$BASELINE_FILE" ]; then
   missed_cutoff_ts="$(jq -r '.cutoff_at // empty' "$BASELINE_FILE" 2>/dev/null)"
   if [[ "$baseline_val" =~ ^[0-9]+$ && "$missed_blocks" =~ ^[0-9]+$ ]]; then
     delta=$(( missed_blocks - baseline_val ))
-    (( delta < 0 )) && delta=0
+
+    # keep raw delta (can be negative)
     missed_since_cutoff="$delta"
   fi
 fi
+
 
 jq -n \
   --arg now "$(date -u +%FT%TZ)" \
