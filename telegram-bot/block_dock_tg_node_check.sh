@@ -4,15 +4,18 @@
 # - Gossip totals over window + MB/s rates
 # - Live 5s RX/TX sample
 # - Auto IFACE + background sampler (10s) feeding /var/tmp JSONL
-# - Writes /var/www/tics-blockdock/stats.json for your website
+# - Writes:
+#     /var/www/tics-blockdock/stats.json        (block/peers/CPU)
+#     /var/www/tics-blockdock/stats2.json       (stake/self/delegators)
+#     /var/www/tics-blockdock/missed-stats.json (missed since cutoff)
 # Deps: docker, jq, bc, curl, md5sum, awk, ping, python3, iproute2
-# Cron example (every 10 min):
+# Cron (example, every 10 min):
 # */10 * * * * IFACE=wlp4s0 . /etc/default/telegram.env; /home/admin/scripts/blockdock_updater_merged.sh >> /home/admin/scripts/blockdock_updater.log 2>&1
 
 set -o pipefail
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# --- load Telegram env (required) ---
+# --- Telegram env (required for alert msg) ---
 if [ -r /etc/default/telegram.env ]; then
   set -a; . /etc/default/telegram.env; set +a
 fi
@@ -32,7 +35,10 @@ SLASH_LOOKBACK_BLOCKS="${SLASH_LOOKBACK_BLOCKS:-200000}"
 ALERT_FILE="${ALERT_FILE:-/tmp/qubetics_last_alert}"
 LOG_FILE="${LOG_FILE:-/home/admin/scripts/blockdock_updater.log}"
 
-# Metrics window (600s pairs well with 10m timer; set WINDOW_SECS=180 if you want a 3m view)
+# Baseline (pre-created by your baseline script)
+BASELINE_FILE="${BASELINE_FILE:-/var/www/tics-blockdock/missed-baseline.json}"
+
+# Metrics window (600s pairs well with 10m timer; set WINDOW_SECS=180 for ~3m)
 : "${WINDOW_SECS:=600}"
 
 # --- logging path ---
@@ -339,8 +345,8 @@ signing_record=$(
 missed_blocks=$(echo "$signing_record" | jq -r '.missed_blocks_counter // empty')
 tombstoned=$(echo "$signing_record"    | jq -r '.tombstoned // empty')
 jailed_until=$(echo "$signing_record"  | jq -r '.jailed_until // empty')
-[[ -z "$missed_blocks" ]] && missed_blocks="N/A"
-[[ -z "$tombstoned"    ]] && tombstoned="unknown"
+[[ -z "$missed_blocks" ]] && missed_blocks="0"  # ensure numeric default
+[[ "$missed_blocks" =~ ^[0-9]+$ ]] || missed_blocks="0"
 
 uptime_pct="N/A"
 if [[ "$missed_blocks" =~ ^[0-9]+$ ]]; then
@@ -396,7 +402,7 @@ msg+="
 msg+="
 📅 Updated: \`$(TZ=America/Denver date)\`)"
 
-# === Write stats.json for the website (no "catching_up", includes delegators + CPU) ===
+# === Write stats.json (block/peers/CPU) ===
 OUT_JSON="/var/www/tics-blockdock/stats.json"
 TMP_JSON="${OUT_JSON}.tmp"
 
@@ -408,10 +414,8 @@ if pid=$(pgrep -x qubeticsd | head -n1); then
   proc_cpu_pct="$(proc_metric "$pid" %cpu | awk '{printf "%.1f",$1+0}' 2>/dev/null || echo null)"
   proc_rss_bytes="$(rss_bytes "$pid")"
 fi
-
 peers_total_now=$(( ${inbound_now:-0} + ${outbound_peers:-0} ))
 
-# === Write stats.json (block/peers/CPU) ===
 jq -n \
   --arg now "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
   --arg height "${latest_block:-0}" \
@@ -454,7 +458,47 @@ jq -n \
   delegators_count: ($delegators|tonumber? // 0)
 }' > "$TMP_JSON2" && mv "$TMP_JSON2" "$OUT_JSON2" && chmod 644 "$OUT_JSON2"
 
-# === De-dupe + send ===
+# === Write missed-stats.json (delta since cutoff) ===
+# --- Write missed-stats.json (missed since cutoff/baseline) ---
+OUT_JSON3="/var/www/tics-blockdock/missed-stats.json"
+TMP_JSON3="${OUT_JSON3}.tmp"
+
+# Compute delta vs. baseline from missed-baseline.json (if present)
+missed_since_cutoff=""
+missed_cutoff_ts=""
+baseline_val=""
+
+if [ -r "$BASELINE_FILE" ]; then
+  baseline_val="$(jq -r '.baseline // empty' "$BASELINE_FILE" 2>/dev/null)"
+  missed_cutoff_ts="$(jq -r '.cutoff_at // empty' "$BASELINE_FILE" 2>/dev/null)"
+  if [[ "$baseline_val" =~ ^[0-9]+$ && "$missed_blocks" =~ ^[0-9]+$ ]]; then
+    delta=$(( missed_blocks - baseline_val ))
+    (( delta < 0 )) && delta=0
+    missed_since_cutoff="$delta"
+  fi
+fi
+
+jq -n \
+  --arg now "$(date -u +%FT%TZ)" \
+  --arg height "${latest_block:-0}" \
+  --arg cons "${target_addr:-$VALCONS_ADDR}" \
+  --arg missed "${missed_blocks:-}" \
+  --arg baseline "${baseline_val:-}" \
+  --arg msu "${missed_since_cutoff:-}" \
+  --arg cutoff "${missed_cutoff_ts:-}" \
+  --arg note "Counts blocks missed since your configured cutoff/baseline (see missed-baseline.json)." \
+'{
+  generated_at: $now,
+  latest_block_height: ($height|tonumber? // 0),
+  validator_consensus_address: $cons,
+  missed_blocks_current: ($missed|tonumber? // null),
+  baseline_from: ($baseline|tonumber? // null),
+  missed_since_cutoff: ($msu|tonumber? // null),
+  cutoff_at: ($cutoff // null),
+  note: $note
+}' > "$TMP_JSON3" && mv "$TMP_JSON3" "$OUT_JSON3" && chmod 644 "$OUT_JSON3"
+
+# === De-dupe + send Telegram ===
 new_hash=$(echo "$msg" | md5sum | awk '{print $1}')
 prev_hash=$(cat "$ALERT_FILE" 2>/dev/null || true)
 if [ "$new_hash" != "$prev_hash" ]; then
