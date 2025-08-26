@@ -306,61 +306,104 @@ fi
 : "${outbound_peers:=0}"
 
 # --- Validator info ---
+# --- Validator info ---
 val_info="$(run_q query staking validator "$VALIDATOR_ADDR" --node="$NODE_RPC" -o json 2>/dev/null)"
 if [ -z "$val_info" ] || [ "$val_info" = "null" ]; then
   log "❌ validator info fetch failed"
-  send_telegram_alert "❌ *Validator info fetch failed* at $(date)" || true
+  send_telegram_alert "❌ Validator info fetch failed at $(date)" || true
   exit 1
 fi
 
-is_jailed=$(echo "$val_info" | jq -r .jailed)
-[ "$is_jailed" = "true" ] && jailed_status="🚨 *Validator is JAILED*" || jailed_status="🟢 *Validator is ACTIVE*"
-commission=$(echo "$val_info" | jq -r .commission.commission_rates.rate)
-commission_pct=$(fmt_pct "$(bc -l <<< "$commission * 100")")
+is_jailed="$(echo "$val_info" | jq -r '.jailed // false')"
+if [ "$is_jailed" = "true" ]; then
+  jailed_status="🚨 *Validator is JAILED*"
+else
+  jailed_status="🟢 *Validator is ACTIVE*"
+fi
+
+# Commission (safe even if missing/empty)
+commission_rate_raw="$(echo "$val_info" | jq -r '.commission.commission_rates.rate // "0"')"
+commission_pct_num="$(python3 - "$commission_rate_raw" <<'PY'
+import sys, decimal
+decimal.getcontext().prec = 28
+arg = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] not in ("", "null") else "0"
+try:
+    x = decimal.Decimal(arg)
+    print(f"{(x*100):.2f}")
+except Exception:
+    print("0.00")
+PY
+)"
 
 # Delegators & total stake
 delegations_json="$(run_q query staking delegations-to "$VALIDATOR_ADDR" --node="$NODE_RPC" --count-total -o json 2>/dev/null)"
-delegator_total=$(echo "$delegations_json" | jq -r '.pagination.total // "0"')
+delegator_total="$(echo "$delegations_json" | jq -r '.pagination.total // "0"')"
 if [[ "$delegator_total" =~ ^[0-9]+$ && "$delegator_total" -gt 0 ]]; then
   delegator_count="$delegator_total"
 else
-  delegator_count=$(echo "$delegations_json" | jq -r '.delegation_responses | length')
+  delegator_count="$(echo "$delegations_json" | jq -r '.delegation_responses | length')"
 fi
 
-val_tokens_raw=$(echo "$val_info" | jq -r '.tokens // "0"')
-total_stake_tics=$(bc <<< "scale=6; $val_tokens_raw / 1000000000000000000")
-total_stake_tics_fmt=$(fmt_tics "$total_stake_tics")
+val_tokens_raw="$(echo "$val_info" | jq -r '.tokens // "0"')"
+total_stake_tics="$(python3 - "$val_tokens_raw" <<'PY'
+import sys, decimal
+decimal.getcontext().prec = 28
+raw = sys.argv[1] if len(sys.argv)>1 and sys.argv[1].strip() else "0"
+amt = decimal.Decimal(raw) / (decimal.Decimal(10) ** 18)
+print(f"{amt:.6f}")
+PY
+)"
+total_stake_tics_fmt="$(fmt_tics "$total_stake_tics")"
 
 # Self-delegation
-self_delegation=$(run_q query staking delegation "$WALLET_ADDR" "$VALIDATOR_ADDR" --node="$NODE_RPC" --home="$DAEMON_HOME" -o json 2>/dev/null | jq -r '.balance.amount // "0"')
-self_tics=$(fmt_tics "$(bc -l <<< "$self_delegation / 1000000000000000000")")
+self_delegation_raw="$(run_q query staking delegation "$WALLET_ADDR" "$VALIDATOR_ADDR" --node="$NODE_RPC" --home="$DAEMON_HOME" -o json 2>/dev/null | jq -r '.balance.amount // "0"')"
+self_tics="$(python3 - "$self_delegation_raw" <<'PY'
+import sys, decimal
+decimal.getcontext().prec = 28
+raw = sys.argv[1] if len(sys.argv)>1 and sys.argv[1].strip() else "0"
+amt = decimal.Decimal(raw) / (decimal.Decimal(10) ** 18)
+print(f"{amt:.3f}")
+PY
+)"
+
+# Outstanding rewards (sum any .amount fields present)
+rewards_json="$(run_q query distribution validator-outstanding-rewards "$VALIDATOR_ADDR" --node="$NODE_RPC" -o json 2>/dev/null || echo '{}')"
+rewards_amount_atto="$(
+  echo "$rewards_json" \
+  | jq -r '[.. | objects | .amount? | select(.)] | map(tonumber) | add // 0'
+)"
+rewards_tics_num="$(python3 - "$rewards_amount_atto" <<'PY'
+import sys, decimal
+decimal.getcontext().prec = 28
+raw = sys.argv[1] if len(sys.argv)>1 and sys.argv[1].strip() else "0"
+amt = decimal.Decimal(raw) / (decimal.Decimal(10) ** 18)
+print(f"{amt:.3f}")
+PY
+)"
 
 # === SLASHING INFO ===
 cons_addr_b32="$(run_q tendermint show-address --home "$DAEMON_HOME" 2>/dev/null || true)"
 target_addr="${cons_addr_b32:-$VALCONS_ADDR}"
-signing_record=$(
+signing_record="$(
   run_q query slashing signing-infos --node="$NODE_RPC" -o json \
   | jq -r --arg V "$target_addr" '.info[]? | select((.address // .cons_address // "") == $V)'
-)
-missed_blocks=$(echo "$signing_record" | jq -r '.missed_blocks_counter // empty')
-tombstoned=$(echo "$signing_record"    | jq -r '.tombstoned // empty')
-jailed_until=$(echo "$signing_record"  | jq -r '.jailed_until // empty')
-[[ -z "$missed_blocks" ]] && missed_blocks="0"  # ensure numeric default
+)"
+missed_blocks="$(echo "$signing_record" | jq -r '.missed_blocks_counter // 0')"
 [[ "$missed_blocks" =~ ^[0-9]+$ ]] || missed_blocks="0"
+tombstoned="$(echo "$signing_record" | jq -r '.tombstoned // false')"
+jailed_until="$(echo "$signing_record" | jq -r '.jailed_until // "Not jailed"')"
 
 uptime_pct="N/A"
-if [[ "$missed_blocks" =~ ^[0-9]+$ ]]; then
-  signed_window=$(run_q query slashing params --node="$NODE_RPC" -o json | jq -r '.signed_blocks_window // 0')
-  if [[ "$signed_window" =~ ^[0-9]+$ && "$signed_window" -gt 0 ]]; then
-    uptime_pct=$(awk -v m="$missed_blocks" -v w="$signed_window" 'BEGIN{printf "%.2f", (w-m)/w*100}')
-  fi
+signed_window="$(run_q query slashing params --node="$NODE_RPC" -o json | jq -r '.signed_blocks_window // 0')"
+if [[ "$signed_window" =~ ^[0-9]+$ && "$signed_window" -gt 0 && "$missed_blocks" =~ ^[0-9]+$ ]]; then
+  uptime_pct="$(awk -v m="$missed_blocks" -v w="$signed_window" 'BEGIN{printf "%.2f", (w-m)/w*100}')"
 fi
 
 # Slashing history over window
 start_h=$(( latest_block > SLASH_LOOKBACK_BLOCKS ? latest_block - SLASH_LOOKBACK_BLOCKS + 1 : 1 ))
-slashes_json=$(run_q query distribution slashes "$VALIDATOR_ADDR" "$start_h" "$latest_block" --node="$NODE_RPC" -o json 2>/dev/null)
-slash_count=$(echo "$slashes_json" | jq -r '.slashes | length')
-recent_fractions=$(echo "$slashes_json" | jq -r '[.slashes[-3:][]?.fraction] | map(tostring) | join(", ")')
+slashes_json="$(run_q query distribution slashes "$VALIDATOR_ADDR" "$start_h" "$latest_block" --node="$NODE_RPC" -o json 2>/dev/null)"
+slash_count="$(echo "$slashes_json" | jq -r '.slashes | length')"
+recent_fractions="$(echo "$slashes_json" | jq -r '[.slashes[-3:][]?.fraction] | map(tostring) | join(", ")')"
 [[ -z "$recent_fractions" || "$recent_fractions" == "null" ]] && recent_fractions="none"
 
 # === P2P/gateway + gossip ===
@@ -379,7 +422,7 @@ $sync_status
 📈 Uptime (window-based): *${uptime_pct}%*
 ⚰️ Tombstoned: *$([ "$tombstoned" = "true" ] && echo Yes || echo No)*   🔒 Jail: *$([[ "$jailed_until" = "Not jailed" ]] && echo Not\ jailed || echo "$jailed_until")*
 📜 Slashing events (last ${SLASH_LOOKBACK_BLOCKS} blocks): *$slash_count*  (recent: $recent_fractions)
-💰 Commission rate: *${commission_pct}%*
+💰 Commission rate: *${commission_pct_num}%*
 🪙 Self-delegated: *$self_tics TICS*"
 
 msg+="
@@ -402,6 +445,66 @@ msg+="
 msg+="
 📅 Updated: \`$(TZ=America/Denver date)\`)"
 
+# === Write stats.json (block/peers/CPU) ===
+OUT_JSON="/var/www/tics-blockdock/stats.json"
+TMP_JSON="${OUT_JSON}.tmp"
+
+system_cpu_pct="$(cpu_usage_pct_system)"
+load1="$(awk '{print $1}' /proc/loadavg 2>/dev/null || echo 0)"
+proc_cpu_pct=null
+proc_rss_bytes=null
+if pid=$(pgrep -x qubeticsd | head -n1); then
+  proc_cpu_pct="$(proc_metric "$pid" %cpu | awk '{printf "%.1f",$1+0}' 2>/dev/null || echo null)"
+  proc_rss_bytes="$(rss_bytes "$pid")"
+fi
+peers_total_now=$(( ${inbound_now:-0} + ${outbound_peers:-0} ))
+
+jq -n \
+  --arg now "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+  --arg height "${latest_block:-0}" \
+  --arg inbound_now "${inbound_now:-0}" \
+  --arg outbound_now "${outbound_peers:-0}" \
+  --arg total_now "${peers_total_now:-0}" \
+  --arg system_cpu_pct "${system_cpu_pct:-0.0}" \
+  --arg load1 "${load1:-0}" \
+  --argjson proc_cpu_pct ${proc_cpu_pct:-null} \
+  --argjson proc_rss_bytes ${proc_rss_bytes:-null} \
+'{
+  generated_at: $now,
+  latest_block_height: ($height|tonumber? // 0),
+  peers: {
+    inbound_now: ($inbound_now|tonumber? // 0),
+    outbound_now: ($outbound_now|tonumber? // 0),
+    total_now: ($total_now|tonumber? // 0)
+  },
+  cpu: {
+    system_pct: ($system_cpu_pct|tonumber? // 0.0),
+    loadavg_1m: ($load1|tonumber? // 0.0),
+    process_pct: $proc_cpu_pct,
+    process_rss_bytes: $proc_rss_bytes
+  }
+}' > "$TMP_JSON" && mv "$TMP_JSON" "$OUT_JSON" && chmod 644 "$OUT_JSON"
+
+# === Write staking-focused stats2.json (stake, self-delegation, delegators, commission, rewards) ===
+OUT_JSON2="/var/www/tics-blockdock/stats2.json"
+TMP_JSON2="${OUT_JSON2}.tmp"
+
+jq -n \
+  --arg now "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+  --arg total_stake "$total_stake_tics_fmt" \
+  --arg self_stake "$self_tics" \
+  --arg delegators "${delegator_count:-0}" \
+  --arg commission_pct "$commission_pct_num" \
+  --arg rewards_tics "$rewards_tics_num" \
+'{
+  generated_at: $now,
+  total_stake_tics: $total_stake,
+  self_delegated_tics: $self_stake,
+  delegators_count: ($delegators|tonumber? // 0),
+  commission_pct: ($commission_pct|tonumber? // null),
+  outstanding_rewards_tics: ($rewards_tics|tonumber? // null)
+}' > "$TMP_JSON2" && mv "$TMP_JSON2" "$OUT_JSON2" && chmod 644 "$OUT_JSON2"
+
 # === Write missed-stats.json (running tally since baseline height) ===
 OUT_JSON3="/var/www/tics-blockdock/missed-stats.json"
 TMP_JSON3="${OUT_JSON3}.tmp"
@@ -410,46 +513,31 @@ TMP_JSON3="${OUT_JSON3}.tmp"
 BASELINE_FILE="/var/www/tics-blockdock/missed-baseline.json"
 BASELINE_HEIGHT=""
 BASELINE_LABEL=""
-
 if [ -r "$BASELINE_FILE" ]; then
   BASELINE_HEIGHT="$(jq -r '.baseline_height // empty' "$BASELINE_FILE" 2>/dev/null)"
   BASELINE_LABEL="$(jq -r '.label // empty' "$BASELINE_FILE" 2>/dev/null)"
 fi
-# Fallbacks if JSON missing / malformed
 : "${BASELINE_HEIGHT:=982750}"
 : "${BASELINE_LABEL:=Hardware Upgrade Baseline}"
 
-# ---- State for persistent tallying ----
 mkdir -p /var/tmp
-TALLY_FILE="/var/tmp/missed-tally.state"     # our running tally (integer)
-PREV_MISSED_FILE="/var/tmp/missed-prev.state" # last on-chain counter snapshot
+TALLY_FILE="/var/tmp/missed-tally.state"
+PREV_MISSED_FILE="/var/tmp/missed-prev.state"
 
-# Load current tally (defaults to 0)
 tally_count=0
-if [ -r "$TALLY_FILE" ]; then
-  tally_count="$(cat "$TALLY_FILE" 2>/dev/null || echo 0)"
-fi
+[ -r "$TALLY_FILE" ] && tally_count="$(cat "$TALLY_FILE" 2>/dev/null || echo 0)"
 
-# Load previous missed counter snapshot (if any)
 prev_missed=""
-if [ -r "$PREV_MISSED_FILE" ]; then
-  prev_missed="$(cat "$PREV_MISSED_FILE" 2>/dev/null || true)"
-fi
+[ -r "$PREV_MISSED_FILE" ] && prev_missed="$(cat "$PREV_MISSED_FILE" 2>/dev/null || true)"
 
-# Ensure numeric for current on-chain counter
-missed_now="${missed_blocks:-}"
-if ! [[ "$missed_now" =~ ^[0-9]+$ ]]; then
-  missed_now=""
-fi
+missed_now="$missed_blocks"
+[[ "$missed_now" =~ ^[0-9]+$ ]] || missed_now=""
 
-# First run: seed previous snapshot; do NOT change tally
 if [ -z "$prev_missed" ] && [ -n "$missed_now" ]; then
   echo "$missed_now" > "$PREV_MISSED_FILE"
   prev_missed="$missed_now"
 fi
 
-# If the on-chain counter increased and we're past the baseline height,
-# add only the positive delta to our persistent tally
 if [ -n "$missed_now" ] && [ -n "$prev_missed" ]; then
   if (( missed_now > prev_missed )); then
     delta=$(( missed_now - prev_missed ))
@@ -457,15 +545,12 @@ if [ -n "$missed_now" ] && [ -n "$prev_missed" ]; then
       tally_count=$(( tally_count + delta ))
       echo "$tally_count" > "$TALLY_FILE"
     fi
-    # Update snapshot regardless
     echo "$missed_now" > "$PREV_MISSED_FILE"
   elif (( missed_now < prev_missed )); then
-    # Counter shrank (e.g., node switch/rollback) — just resync snapshot; do not decrement tally
     echo "$missed_now" > "$PREV_MISSED_FILE"
   fi
 fi
 
-# Emit JSON for the panel
 jq -n \
   --arg now "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
   --arg height "${latest_block:-0}" \
@@ -481,48 +566,6 @@ jq -n \
   baseline_from_height: ($baseline_h|tonumber? // 0),
   baseline_label: $baseline_label,
   note: "Running tally of missed blocks since baseline height (independent of floating missed counter)."
-}' > "$TMP_JSON3" && mv "$TMP_JSON3" "$OUT_JSON3" && chmod 644 "$OUT_JSON3"
-
-# === Write missed-stats.json (delta since cutoff) ===
-# --- Write missed-stats.json (missed since cutoff/baseline) ---
-OUT_JSON3="/var/www/tics-blockdock/missed-stats.json"
-TMP_JSON3="${OUT_JSON3}.tmp"
-
-# Compute delta vs. baseline from missed-baseline.json (if present)
-missed_since_cutoff=""
-missed_cutoff_ts=""
-baseline_val=""
-
-if [ -r "$BASELINE_FILE" ]; then
-  baseline_val="$(jq -r '.baseline // empty' "$BASELINE_FILE" 2>/dev/null)"
-  missed_cutoff_ts="$(jq -r '.cutoff_at // empty' "$BASELINE_FILE" 2>/dev/null)"
-  if [[ "$baseline_val" =~ ^[0-9]+$ && "$missed_blocks" =~ ^[0-9]+$ ]]; then
-    delta=$(( missed_blocks - baseline_val ))
-
-    # keep raw delta (can be negative)
-    missed_since_cutoff="$delta"
-  fi
-fi
-
-
-jq -n \
-  --arg now "$(date -u +%FT%TZ)" \
-  --arg height "${latest_block:-0}" \
-  --arg cons "${target_addr:-$VALCONS_ADDR}" \
-  --arg missed "${missed_blocks:-}" \
-  --arg baseline "${baseline_val:-}" \
-  --arg msu "${missed_since_cutoff:-}" \
-  --arg cutoff "${missed_cutoff_ts:-}" \
-  --arg note "Counts blocks missed since your configured cutoff/baseline (see missed-baseline.json)." \
-'{
-  generated_at: $now,
-  latest_block_height: ($height|tonumber? // 0),
-  validator_consensus_address: $cons,
-  missed_blocks_current: ($missed|tonumber? // null),
-  baseline_from: ($baseline|tonumber? // null),
-  missed_since_cutoff: ($msu|tonumber? // null),
-  cutoff_at: ($cutoff // null),
-  note: $note
 }' > "$TMP_JSON3" && mv "$TMP_JSON3" "$OUT_JSON3" && chmod 644 "$OUT_JSON3"
 
 # === De-dupe + send Telegram ===
