@@ -6,7 +6,7 @@ but also share in our validator’s commissions — fairly, automatically, and e
 ### Plan only (no sends, no withdraw):
 
 ```
-FROM=main-wallet \
+FROM=qubetics18llj8eqh9k9mznylk8svrcc63ucf7y2rkyqm2m \
 HOME_DIR=/mnt/nvme/qubetics \
 DRY_RUN=false \
 ./distribute_commissions.sh --only-plan
@@ -30,3 +30,33 @@ DRY_RUN=false \
 GAS_PRICES=0.025tics \
 ./distribute_commissions.sh --withdraw --export plan_$(date +%Y-%m).csv
 ```
+
+## Example Output
+
+```
+FROM=qubetics18llj8eqh9k9mznylk8svrcc63ucf7y2rkyqm2m \
+HOME_DIR=/mnt/nvme/qubetics \
+DRY_RUN=false \
+./distribute_commissions.sh --only-plan
+[INFO] Fetching delegators...
+[INFO] Delegators: 8 | Total stake: xxxxxxxxxxxxxxxxxx tics
+[INFO] FROM address: qubetics18lljzyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+[INFO] Querying spendable balance for qubetics18lljzyyyyyyyyyyyyyyyyyyyyyyyyyyyyy ...
+[INFO] Spendable: 71458995198161154753 tics
+[INFO] Distribution pool: 71458995198160660000 tics (spendable 71458995198161154753)
+[INFO] Eligible payouts: 8 | Sum: 71458995198160660000 tics | Leftover: 0 tics
+
+Delegator                                               Amount (tics)
+-----------------------------------------------  --------------------
+qubetics1......................................  xxxxxxxxxxxxxxxxxxxx
+qubetics1......................................  xxxxxxxxxxxxxxxxxxxx
+qubetics1......................................   xxxxxxxxxxxxxxxxxxx
+qubetics1......................................   xxxxxxxxxxxxxxxxxxx
+qubetics1......................................     xxxxxxxxxxxxxxxxx
+qubetics1......................................     xxxxxxxxxxxxxxxxx
+qubetics1......................................         xxxxxxxxxxxxx
+qubetics1......................................     xxxxxxxxxxxxxxxxx
+TOTAL                                            xxxxxxxxxxxxxxxxxxxx
+
+[INFO] Plan only. Exiting.
+````
