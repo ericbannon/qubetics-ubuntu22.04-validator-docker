@@ -1,0 +1,102 @@
+{
+	email embtics@gmail.com
+}
+
+# ---------- RPC: node.bannon-validator-tics.com ----------
+node.bannon-validator-tics.com {
+	encode zstd gzip
+
+	# CORS only for your dashboard origin
+	@fromapp header Origin https://validator.qubetics.com
+	header @fromapp {
+		Access-Control-Allow-Origin {http.request.header.Origin}
+		Access-Control-Allow-Methods GET, OPTIONS
+		Access-Control-Allow-Headers *
+		Access-Control-Allow-Credentials false
+		Vary Origin, Access-Control-Request-Method, Access-Control-Request-Headers
+		defer
+	}
+
+	# Preflight (OPTIONS) -> 204
+	@preflight {
+		method OPTIONS
+		header Origin *
+	}
+	handle @preflight {
+		respond "" 204
+	}
+
+	# RPC endpoints (no path stripping)
+	@status path /status*
+	@netinfo path /net_info*
+	@health path /health*
+	@abci path /abci_info*
+	@commit path /commit*
+	@block path /block*
+	@blockres path /block_results*
+	@validators path /validators*
+
+	handle @status {
+		reverse_proxy 127.0.0.1:26657
+	}
+	handle @netinfo {
+		reverse_proxy 127.0.0.1:26657
+	}
+	handle @health {
+		reverse_proxy 127.0.0.1:26657
+	}
+	handle @abci {
+		reverse_proxy 127.0.0.1:26657
+	}
+	handle @commit {
+		reverse_proxy 127.0.0.1:26657
+	}
+	handle @block {
+		reverse_proxy 127.0.0.1:26657
+	}
+	handle @blockres {
+		reverse_proxy 127.0.0.1:26657
+	}
+	handle @validators {
+		reverse_proxy 127.0.0.1:26657
+	}
+
+	# Everything else forbidden
+	handle {
+		respond "Forbidden" 403
+	}
+}
+
+# ---------- Website: tics-blockdock.io ----------
+# HTTP: only redirect non-ACME
+http://tics-blockdock.io, http://www.tics-blockdock.io {
+	@acme path /.well-known/acme-challenge/*
+	handle @acme {
+		root * /var/lib/caddy/acme-challenge
+		file_server
+	}
+
+	@non_acme not path /.well-known/acme-challenge/*
+	handle @non_acme {
+		redir https://{host}{uri} 308
+	}
+}
+
+# HTTPS: your site
+https://tics-blockdock.io, https://www.tics-blockdock.io {
+	root * /var/www/tics-blockdock
+	encode zstd gzip
+	file_server
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer-when-downgrade"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+	}
+
+	@assets path /assets/*
+	handle @assets {
+		header Cache-Control "public, max-age=604800, immutable"
+	}
+}
