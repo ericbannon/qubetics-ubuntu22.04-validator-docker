@@ -1,0 +1,25 @@
+
+# /etc/caddy/Caddyfile snippet
+tics-blockdock.io, www.tics-blockdock.io {
+    root * /var/www/bannon-tics
+    file_server
+
+    encode zstd gzip
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "no-referrer-when-downgrade"
+        Permissions-Policy "geolocation=(), microphone=(), camera=()"
+        # Basic CORS if you later expose JSON endpoints:
+        # Access-Control-Allow-Origin "*"
+    }
+
+    @assets path /assets/*
+    handle @assets {
+        header Cache-Control "public, max-age=604800, immutable"
+    }
+
+    # Optional redirect
+    @www host www.tics-blockdock.io
+    handle @www { redir https://tics-blockdock.io{uri} permanent }
+}
