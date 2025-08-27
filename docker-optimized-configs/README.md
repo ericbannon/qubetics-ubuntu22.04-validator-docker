@@ -3,31 +3,6 @@
 This document consolidates the **optimized settings** for running a Qubetics validator or full node.  
 It covers both **`app.toml`** (application layer) and **`config.toml`** (consensus & networking) with explanations for performance, stability, and security.
 
-## Overall Optimization Summary
-
-### Performance
-* Large IAVL cache & pruning tuned for disk efficiency.
-* Disabled tx/event indexing to reduce I/O.
-* Faster consensus round times & mempool scaling.
-
-### Networking
-* Persistent peers with retries every 20s.
-* Balanced inbound/outbound peer limits.
-* Peer exchange enabled for healthy topology.
-
-### Security
-* RPC and Prometheus bound to localhost only.
-* Public APIs (1317, JSON-RPC, gRPC-Web) disabled unless explicitly required.
-
-### Storage
-* Pruning aggressively reduces DB growth.
-* ABCI responses discarded.
-
-**NOTE:**
-
-This Lean profile is recommended for production validators. Explorers, RPC nodes, and analytics nodes should not use this profile (they require tx indexing + longer state retention)
----
-
 # `config.toml` (Consensus / P2P / RPC)
 
 ---
