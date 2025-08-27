@@ -14,7 +14,7 @@ abci = "socket"
 filter_peers = false
 
 [rpc]
-laddr = "tcp://0.0.0.0:26657"
+laddr = "tcp://127.0.0.1:26657"
 cors_allowed_origins = "['*']"
 cors_allowed_methods = "['HEAD', 'GET', 'POST']"
 cors_allowed_headers = "['Origin', 'Accept', 'Content-Type', 'X-Requested-With', 'X-Server-Time']"
