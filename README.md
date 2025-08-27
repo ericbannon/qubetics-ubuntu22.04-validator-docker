@@ -18,12 +18,13 @@ The Docker Image will be updated with newer versions of qubeticsd and rebuilt wi
 </p>
 
 <p align="center">
-  <a href="https://www.tics-blockdock.io/">
-    <img src="https://img.shields.io/badge/Visit%20Website-2D9BF0?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Website Button">
+  <a href="https://www.tics-blockdock.io/" style="text-decoration:none;">
+    <img src="https://img.shields.io/badge/Visit%20Website-000000?style=for-the-badge&logo=windowsterminal&logoColor=white" 
+         alt="Visit Website" width="400">
   </a>
 </p>
-👉 Subscribe for updates
 
+👉 Subscribe for updates
 <p><strong>Telegram:</strong> <a href="https://t.me/blockdockvalidator">@blockdockvalidator</a></p>
  
 Stake with confidence. Here’s what you get as a delegator:
