@@ -1,118 +1,216 @@
 # ⚡ Qubetics Validator – Optimized Config (Lean Profile)
 
-This profile is tuned for **validators that prioritize block signing** under high network load (e.g. the daily 07:19 UTC airdrop floods).  
+This document consolidates the **optimized settings** for running a Qubetics validator or full node.  
+It covers both **`app.toml`** (application layer) and **`config.toml`** (consensus & networking) with explanations for performance, stability, and security.
 
-**Why this helps:**
+## Overall Optimization Summary
 
-* ⏱️ Reduced Consensus Lag → tighter timeouts prevent long stalls
-* 💾 Less Disk I/O → pruning + no tx indexer = smoother commits
-* 🌐 Stable Networking → outbound peer cap avoids churn storms
-* 🛡️ Resilient to Floods → validator spends CPU on signing, not relaying spam
+### Performance
+* Large IAVL cache & pruning tuned for disk efficiency.
+* Disabled tx/event indexing to reduce I/O.
+* Faster consensus round times & mempool scaling.
+
+### Networking
+* Persistent peers with retries every 20s.
+* Balanced inbound/outbound peer limits.
+* Peer exchange enabled for healthy topology.
+
+### Security
+* RPC and Prometheus bound to localhost only.
+* Public APIs (1317, JSON-RPC, gRPC-Web) disabled unless explicitly required.
+
+### Storage
+* Pruning aggressively reduces DB growth.
+* ABCI responses discarded.
 
 **NOTE:**
 
 This Lean profile is recommended for production validators. Explorers, RPC nodes, and analytics nodes should not use this profile (they require tx indexing + longer state retention)
 ---
 
-## 🔧 Config Overview
+# `config.toml` (Consensus / P2P / RPC)
 
-The **Lean profile** is focused on validator reliability.  
-It makes the following changes to `config.toml` and `app.toml`:
+---
 
-### `config.toml` (Consensus / P2P / RPC)
+## 🏗️ Core Settings
 
-#### Summary of Enhancements
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `proxy_app` | `tcp://0.0.0.0:26658` | ABCI app connection (Cosmos SDK). |
+| `moniker` | `bannon-validator-x8` | Node identifier. |
+| `block_sync` | `true` | Enable fast block sync. |
+| `db_backend` | `goleveldb` | Efficient embedded DB backend. |
+| `db_dir` | `data` | Database storage directory. |
+| `log_level` | `info` | Standard logging level. |
+| `log_format` | `plain` | Simpler log formatting. |
 
-##### P2P
-* max_num_inbound_peers = 24, max_num_outbound_peers = 12, max_num_peers = 36
-* send_rate/recv_rate = 10 MiB/s
-* peer_gossip_sleep_duration = "80ms", peer_query_maj23_sleep_duration = "1.5s"
-* max_packet_msg_payload_size = 1024
-* handshake_timeout = "10s", dial_timeout = "3s", persistent_peers_max_dial_period = "20s"
-* flush_throttle_timeout = "25ms", allow_duplicate_ip = true
+---
 
-1. Keeps you well‑connected on a ~40‑peer net but avoids excessive per‑peer goroutine load.
-2. Less chatty than 10ms, still responsive; reduces wakeups on a small core budget.
-3. Avoids giant packets hogging a core on serialization.
-4. Fail fast on flappers; churn keeps moving.
-5. Smoother send buffering; helpful if several peers share NAT.
+## 🌐 RPC Server
+
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `laddr` | `tcp://127.0.0.1:26657` | RPC only exposed locally for security. |
+| `cors_allowed_origins` | `['*']` | Wide CORS (disable/lock down if public). |
+| `grpc_max_open_connections` | `900` | High concurrent connection support. |
+| `max_open_connections` | `1024` | Protects against resource exhaustion. |
+| `experimental_close_on_slow_client` | `true` | Drops slow clients to protect performance. |
+| `timeout_broadcast_tx_commit` | `10s` | Standard transaction commit timeout. |
+| `pprof_laddr` | `127.0.0.1:6060` | Local profiling endpoint. |
+
+---
+
+## 🔗 P2P Network
+
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `laddr` | `tcp://0.0.0.0:26656` | Public P2P listener. |
+| `external_address` | `tcp://73.3.165.55:26656` | Node’s advertised external IP. |
+| `persistent_peers` | `65cb0de4…; f874aca4…; 41f8e8b5…; ad8e2053…` | Stable peers for connectivity. |
+| `addr_book_strict` | `false` | Allows looser peer validation. |
+| `max_num_inbound_peers` | `24` | Balance inbound peer load. |
+| `max_num_outbound_peers` | `12` | Limit outbound dial attempts. |
+| `unconditional_peer_ids` | `65cb0de4…, f874aca4…` | Always connect to these peers. |
+| `persistent_peers_max_dial_period` | `20s` | Faster retries on persistent peers. |
+| `send_rate` / `recv_rate` | `10 MB/s` | Bandwidth caps per peer. |
+| `pex` | `true` | Enable peer exchange. |
+| `allow_duplicate_ip` | `true` | Allow multiple peers from same IP (useful for testnets). |
+
+---
+
+## 🧮 Mempool
+
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `version` | `v0` | Legacy, stable mempool. |
+| `type` | `flood` | Broadcast style mempool. |
+| `recheck` | `false` | Skip rechecks for efficiency. |
+| `size` | `2000` | Max txs in mempool. |
+| `max_txs_bytes` | `256MB` | Cap on total mempool size. |
+| `cache_size` | `50000` | Large cache for fast tx lookup. |
+| `max_tx_bytes` | `512KB` | Per-transaction limit. |
+| `experimental_max_gossip_connections_to_persistent_peers` | `6` | Extra gossip scaling. |
+| `experimental_max_gossip_connections_to_non_persistent_peers` | `10` | Wider gossip fan-out. |
+
+---
+
+## ⏱️ Consensus
+
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `timeout_propose` | `2s` | Time to propose a block. |
+| `timeout_prevote` | `1s` | Time for prevote step. |
+| `timeout_precommit` | `1s` | Time for precommit step. |
+| `timeout_commit` | `6s` | Time for commit step. |
+| `create_empty_blocks` | `false` | Do not create empty blocks. |
+| `peer_gossip_sleep_duration` | `10ms` | Fast consensus gossiping. |
+
+---
+
+## 📦 State Sync & Block Sync
+
+- **State Sync** → disabled (manual snapshots preferred).  
+- **Block Sync** → enabled (`v0`).  
+
+---
+
+## 🗄️ Storage
+
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `discard_abci_responses` | `true` | Saves disk by discarding ABCI responses. |
+
+---
+
+## 🔍 Indexing
+
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `tx_index.indexer` | `null` | Disables tx indexing (saves disk/CPU). |
+
+---
+
+## 📊 Instrumentation
+
+| Parameter | Value |
+|-----------|-------|
+| `prometheus` | `true` |
+| `prometheus_listen_addr` | `127.0.0.1:26660` |
+| `namespace` | `cometbft` |
+
+Exposed only on localhost for safety.  
 
 
-##### Consensus
-* timeout_commit = "2s" (from 6s), with propose/pre‑vote/pre‑commit tuned for steady cadence
-* create_empty_blocks = false
-
-1. Cuts useless consensus churn between bursts.
-2. This raises TPS without pushing too hard on cores used
-
-##### RPC
-* rpc.max_open_connections = 1024
-
-1. Limits FD overcommit.
-
-##### Mempool
-* version stays = "v0" for raw throughput
-* size = 10000, cache_size = 16000
-* max_txs_bytes = 512 MiB (balanced for memory on a small box)
-* ttl-num = 0, ttl-duration = "0s"
-
-### `app.toml` (Application Layer)
+# `app.toml` (Application Layer)
 
 This configuration file controls the **application-level settings** of the Qubetics validator, including pruning, mempool limits, API exposure, and minimum gas prices.  
 
 It is tuned for the **Lean Profile**, optimized for block signing stability under heavy network load.
 
-#### Summary of Enhancements
+---
 
-⚠️ **Disclaimer**
+## ⚡ Application Settings (`app.toml`)
 
-This app.toml profile is optimized for validators that only need to sign blocks reliably.
-It trades off query functionality and historical data retention.
-Use it only if validator performance is your priority.
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `minimum-gas-prices` | `0.025tics` | Prevents spam by requiring a base fee. |
+| `pruning` | `custom` | Custom pruning for optimal disk usage. |
+| `pruning-keep-recent` | `2000` | Retain last 2000 blocks for queries. |
+| `pruning-keep-every` | `0` | Do not keep older historical states. |
+| `pruning-interval` | `50` | Run pruning every 50 blocks. |
+| `halt-height` / `halt-time` | `0` | No forced halts. |
+| `min-retain-blocks` | `0` | Allow default Tendermint retention. |
+| `inter-block-cache` | `true` | Speeds up intra-block processing. |
+| `iavl-cache-size` | `781250` | Larger IAVL cache for better performance. |
+| `iavl-disable-fastnode` | `false` | Keep fastnode indexing enabled. |
+| `iavl-lazy-loading` | `false` | Ensure full state is always loaded. |
+| `indexer` | `null` | Disables tx/block event indexer to save disk/IO. |
+| `snapshot-interval` | `0` | No snapshots created. |
+| `snapshot-keep-recent` | `2` | Keep only 2 recent snapshots if enabled. |
 
-##### Mempool
-```
-[mempool]
-max-txs = 2000
-```
+---
 
-* Caps the app-side mempool at 2000 transactions
-* Prevents unbounded growth inside the Cosmos SDK layer
-* Matches the consensus mempool limit for consistency
+# app.toml summary of optimizations
 
+## 📊 Telemetry
+- Telemetry completely **disabled** (Prometheus/Grafana can be enabled if needed).  
 
-##### Pruning
+## 🌐 API
+- REST API & Swagger **disabled** for security.  
+- If enabled: bound to `1317`, supports up to 1000 connections, but uses **unsafe CORS** (not safe for public).  
 
-pruning = "custom", pruning-keep-recent = "2000", pruning-keep-every = "0", pruning-interval = "50"
+## 🧩 Rosetta
+- **Disabled** (for exchanges/explorers).  
+- If enabled, update `denom-to-suggest` from `uatom` → `tics`.  
 
-* Pruning tightened to keep on‑disk churn sane:
+## 🛰️ gRPC
+- **Enabled** at `0.0.0.0:9090` (wallets/relayers use this).  
+- gRPC-Web **disabled**.  
 
-##### API & gRPC
-```
-[api]
-swagger = false
+## 🔗 State Sync
+- State sync **snapshots disabled**.  
 
-[grpc-web]
-enable = false
+## 🗄️ Store & Streamers
+- **No active streamers**.  
+- File streamer is defined but inactive.  
 
-[grpc]
-# Enable defines if the gRPC server should be enabled.
-enable = true
-```
+## 🧮 Mempool
+- Large mempool: up to **10k txs / 512 MB**.  
+- Stable `v0` mempool version.  
+- No TTLs: txs remain until included.  
 
-* Swagger disabled for lighter runtime footprint
-* grpc.enable = true → lightweight, efficient local monitoring possible
-* grpc-web.enable = false → reduces surface area, saves a bit of CPU, keeps validator lean
+## ⚙️ EVM
+- Tracer off.  
+- No gas cap (`max-tx-gas-wanted=0`).  
 
-##### Minimum Gas Price
+## 🔌 JSON-RPC
+- **Disabled**.  
+- If enabled: eth, net, web3 modules; gas cap 25M; metrics exposed at `:6065`.  
+- Security: unprotected txs + insecure unlock **disabled**.  
 
-```
-minimum-gas-prices = "0.025tics"
-```
+## 🔒 TLS
+- Not configured (TLS should be handled by reverse proxy like Caddy/Nginx).  
 
-* Rejects 0-fee spam transactions from entering the mempool
-* Ensures validator resources aren’t wasted processing junk txs
-
-##### Snapshots
-
-Snapshots off for pure performance runs: snapshot-interval = 0, snapshot-keep-recent = 2
+## 🧠 MemIAVL
+- **Disabled**.  
+- Falls back to stable disk-backed IAVL.  
