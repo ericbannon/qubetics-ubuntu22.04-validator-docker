@@ -11,14 +11,17 @@ The Docker Image will be updated with newer versions of qubeticsd and rebuilt wi
 
 ## Welcome to Block Dock Validator* 🚢🐳
 
-*Validator (valoper):* qubeticsvaloper18llj8eqh9k9mznylk8svrcc63ucf7y2r4xkd8l
-
-<p>
+<p align="center">
   <a href="https://t.me/blockdockvalidator">
-    <img src="assets/blockdock.png" alt="Block Dock Productions logo" width="260">
+    <img src="assets/blockdock.png" alt="Block Dock Productions logo" width="100%">
   </a>
 </p>
 
+<p align="center">
+  <a href="https://www.tics-blockdock.io/">
+    <img src="https://img.shields.io/badge/Visit%20Website-2D9BF0?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Website Button">
+  </a>
+</p>
 👉 Subscribe for updates
 
 <p><strong>Telegram:</strong> <a href="https://t.me/blockdockvalidator">@blockdockvalidator</a></p>
