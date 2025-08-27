@@ -14,7 +14,7 @@ abci = "socket"
 filter_peers = false
 
 [rpc]
-laddr = "tcp://127.0.0.1:26657"
+laddr = "tcp://0.0.0.0:26657"
 cors_allowed_origins = "['*']"
 cors_allowed_methods = "['HEAD', 'GET', 'POST']"
 cors_allowed_headers = "['Origin', 'Accept', 'Content-Type', 'X-Requested-With', 'X-Server-Time']"
@@ -38,12 +38,12 @@ pprof_laddr = "127.0.0.1:6060"
 laddr = "tcp://0.0.0.0:26656"
 external_address = "tcp://73.3.165.55:26656"
 seeds = ""
-persistent_peers = "65cb0de46806c3e50395110b84d22275a29150ca@38.242.244.114:26656,f874aca4075ce71b7e0fa62f882d7bb69aed9adc@85.195.254.66:26656,41f8e8b5479374a21e69be09911a0c0dc6f41b23@49.0.247.123:26656,ad8e2053470a347d87f5125d54fe04d86155f7c4@159.138.134.250:26656"
+persistent_peers = "060e6dfb17718c1c5e80bff5987fe2153a67135b@119.12.166.176:26656,12abe61443f365b2413169c065ce6807222787cf@124.243.136.112:26656,1870facccdb4bd4e692cf15fccab4bcf6149d05a@190.92.230.171:26656,1e361cef3f9d19aa3859bd5b9ba1ef74122263f5@182.160.10.103:26656,20110ea79914da49c2f1cc5bbf8f43f67cd20963@34.42.60.46:26656,2e2986aabe6a1870f14a9a61ca2b88f8c3792426@65.109.93.253:26656,383b73dbee10f92012ad4148816af6bef5f1b503@188.239.39.55:26656,3ab62c6c5537fafca97c7236ad90941b1cc469ad@5.196.110.211:26656,660a5787a0e4990fbac22dc6e0d1cad50bd5b074@114.119.180.222:26656,84d219b7900de7184b0e53ba32d5bb0b5f5982f1@161.97.87.21:26656"
 addr_book_file = "config/addrbook.json"
 addr_book_strict = false
-max_num_inbound_peers = 24
-max_num_outbound_peers = 12
-unconditional_peer_ids = "65cb0de46806c3e50395110b84d22275a29150ca,f874aca4075ce71b7e0fa62f882d7bb69aed9adc"
+max_num_inbound_peers = 80
+max_num_outbound_peers = 40
+unconditional_peer_ids = ""
 persistent_peers_max_dial_period = "20s"
 flush_throttle_timeout = "25ms"
 max_packet_msg_payload_size = 1024
@@ -65,16 +65,16 @@ type = "flood"
 recheck = false
 broadcast = true
 wal_dir = ""
-size = 2000
+size = 5000
 max_txs_bytes = 268435456
-cache_size = 50000
+cache_size = 10000
 keep-invalid-txs-in-cache = false
-max_tx_bytes = 524288
+max_tx_bytes = 1048576
 max_batch_bytes = 0
 ttl-duration = "0s"
 ttl-num-blocks = 0
-experimental_max_gossip_connections_to_persistent_peers = 6
-experimental_max_gossip_connections_to_non_persistent_peers = 10
+experimental_max_gossip_connections_to_persistent_peers = 4
+experimental_max_gossip_connections_to_non_persistent_peers = 3
 
 [statesync]
 enable = false
@@ -92,7 +92,7 @@ version = "v0"
 
 [consensus]
 wal_file = "data/cs.wal/wal"
-timeout_propose = "2s"
+timeout_propose = "3s"
 timeout_propose_delta = "300ms"
 timeout_prevote = "1s"
 timeout_prevote_delta = "300ms"
@@ -101,7 +101,7 @@ timeout_precommit_delta = "300ms"
 timeout_commit = "6s"
 double_sign_check_height = 0
 skip_timeout_commit = false
-create_empty_blocks = false
+create_empty_blocks = true
 create_empty_blocks_interval = "0s"
 peer_gossip_sleep_duration = "10ms"
 peer_query_maj23_sleep_duration = "2s"

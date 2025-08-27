@@ -49,7 +49,7 @@ Not “instanode” or one-click. We run our own configs and share learnings. Ex
 
 #### 🌐 **Transparency: OPENSOURCE CODE for delegators to view upgrade scripts, automation and new enhancements directly in code**
 
-*What this means for you:*  
+**What this means for you:** 
 • Higher uptime → more chances to collect rewards  
 • Secure operations → lower operational risk  
 • Predictable upgrades → fewer interruptions  

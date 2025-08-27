@@ -69,16 +69,16 @@ streamers = []
 keys = ["*", ]
 write_dir = ""
 prefix = ""
-output-metadata = "true"
-stop-node-on-error = "true"
-fsync = "false"
 
+# output-metadata specifies if output the metadata file which includes the abci request/responses
+# during processing the block.
+output-metadata = "true"
 [mempool]
 max-txs = 2000
 version = "v0"
-size = 10000
-max_txs_bytes = 536870912
-cache_size = 16000
+size = 5000
+max_txs_bytes = 1073741824
+cache_size = 10000
 ttl-num = 0
 ttl-duration = "0s"
 
