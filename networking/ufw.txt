@@ -1,0 +1,20 @@
+sudo ufw status
+
+Status: active
+
+To                         Action      From
+--                         ------      ----
+OpenSSH                    ALLOW       Anywhere
+26656/tcp                  ALLOW       Anywhere
+26657/tcp                  DENY        Anywhere
+80/tcp                     ALLOW       Anywhere
+443/tcp                    ALLOW       Anywhere
+1317/tcp                   LIMIT       Anywhere
+8545/tcp                   LIMIT       Anywhere
+OpenSSH (v6)               ALLOW       Anywhere (v6)
+26656/tcp (v6)             ALLOW       Anywhere (v6)
+26657/tcp (v6)             DENY        Anywhere (v6)
+80/tcp (v6)                ALLOW       Anywhere (v6)
+443/tcp (v6)               ALLOW       Anywhere (v6)
+1317/tcp (v6)              LIMIT       Anywhere (v6)
+8545/tcp (v6)              LIMIT       Anywhere (v6)

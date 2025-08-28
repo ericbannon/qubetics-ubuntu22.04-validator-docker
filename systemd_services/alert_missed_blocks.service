@@ -1,4 +1,3 @@
-# /etc/systemd/system/alert_missed_blocks.service
 [Unit]
 Description=Qubetics missed-blocks Telegram alerts (by-height scan)
 After=network-online.target
@@ -6,8 +5,13 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=root
-Group=root
+
+# Run as your normal admin user (recommended).
+# If you must run as root, change User/Group to root and ensure /etc/default/telegram.env is readable.
+User=admin
+Group=admin
+
+# Core config (can also live in /etc/default/alert-missed-blocks)
 Environment=RPC=http://127.0.0.1:26657
 Environment=SCAN_RANGE=1000
 Environment=CHECK_INTERVAL=30
@@ -15,10 +19,25 @@ Environment=INCLUDE_NIL=1
 Environment=STATE_DIR=/var/lib/qubetics-alert
 Environment=STATE_FILE=/var/lib/qubetics-alert/missed_byheight.state
 Environment=SEEN_FILE=/var/lib/qubetics-alert/missed_seen.list
+
+# Secrets / tokens
 EnvironmentFile=/etc/default/telegram.env
-ExecStart=/usr/bin/env bash -lc '/home/admin/scripts/alert_missed_blocks.sh'
+
+# Ensure relative paths (if any) resolve
+WorkingDirectory=/home/admin/scripts
+
+# Call the script directly (no shell wrapper)
+ExecStart=/home/admin/scripts/alert_missed_blocks.sh
+
+# Restart policy
 Restart=always
 RestartSec=5s
+
+# Logging (journal)
+StandardOutput=journal
+StandardError=journal
+
+# Hardening
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=full
