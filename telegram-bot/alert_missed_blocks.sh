@@ -9,20 +9,27 @@ fi
 : "${TELEGRAM_CHAT_ID_PRIVATE:?TELEGRAM_CHAT_ID_PRIVATE not set}"
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+umask 0022
 
 # --- Config ---
-RPC="${RPC:-http://127.0.0.1:26657}"         # Tendermint RPC reachable from host
-SCAN_RANGE="${SCAN_RANGE:-300}"              # how many recent blocks to scan each loop
-CHECK_INTERVAL="${CHECK_INTERVAL:-30}"       # seconds between scans
-INCLUDE_NIL="${INCLUDE_NIL:-0}"              # set 1 to alert on NIL votes too
-STATE_DIR="${STATE_DIR:-/var/tmp}"
-STATE_FILE="${STATE_FILE:-$STATE_DIR/qubetics_missed_byheight.state}"  # last scanned height
-SEEN_FILE="${SEEN_FILE:-$STATE_DIR/qubetics_missed_seen.list}"        # list of heights already alerted
+RPC="${RPC:-http://127.0.0.1:26657}"          # Tendermint RPC reachable from host
+SCAN_RANGE="${SCAN_RANGE:-300}"               # how many recent blocks to scan each loop
+CHECK_INTERVAL="${CHECK_INTERVAL:-30}"        # seconds between scans
+INCLUDE_NIL="${INCLUDE_NIL:-1}"               # <-- default ON: alert on NIL votes (flag=3)
 
+# Dedicated state dir under /var/lib
+STATE_DIR="${STATE_DIR:-/var/lib/qubetics-alert}"
+STATE_FILE="${STATE_FILE:-$STATE_DIR/missed_byheight.state}"   # last scanned height
+SEEN_FILE="${SEEN_FILE:-$STATE_DIR/missed_seen.list}"          # heights already alerted
+
+# Ensure state dir/files exist with reasonable perms
 mkdir -p "$STATE_DIR"
+[ -f "$STATE_FILE" ] || install -m 664 /dev/null "$STATE_FILE"
+[ -f "$SEEN_FILE" ]  || install -m 664 /dev/null "$SEEN_FILE"
 
 # --- Telegram ---
 send_alert() {
+  if [ "${DRY_RUN:-0}" = "1" ]; then echo "[DRY-RUN ALERT] $1"; return; fi
   local message="$1"
   local resp code body
   resp=$(curl -s --connect-timeout 5 --max-time 10 \
@@ -70,7 +77,7 @@ get_flag_for_height() {
 echo "[$(date)] by-height missed-block alert loop starting (interval=${CHECK_INTERVAL}s; range=${SCAN_RANGE}; rpc=${RPC})"
 send_alert "✅ Test: by-height missed-block alert running on $(hostname) at $(date)"
 
-# Init seen file
+# Init seen file (already created above)
 touch "$SEEN_FILE"
 
 # Load last scanned height if present (we'll still window by SCAN_RANGE)
@@ -82,6 +89,8 @@ fi
 
 # --- Main loop ---
 while true; do
+  if [ "${SINGLE_PASS:-0}" = "1" ]; then :; else :; fi
+
   MYHEXU="$(get_my_hex_upper)"
   if [ -z "$MYHEXU" ] || [ "$MYHEXU" = "null" ]; then
     echo "[$(date)] ERROR: could not determine validator hex address via /status" >&2
@@ -125,7 +134,7 @@ while true; do
            echo "$h" >> "$SEEN_FILE"
          fi
          ;;
-      3)                         # NIL (optional treat as miss)
+      3)                         # NIL (now treated as a miss by default)
          if [ "$INCLUDE_NIL" = "1" ]; then
            if ! grep -qx "$h" "$SEEN_FILE"; then
              new_misses+=("$h")
@@ -137,8 +146,8 @@ while true; do
     esac
   done
 
-  # Persist last scanned height
-  echo "$scanned_to" > "$STATE_FILE"
+  # Persist last scanned height (atomic-ish)
+  printf "%s\n" "$scanned_to" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
   LAST_SCANNED="$scanned_to"
 
   # Alert if we found new misses
@@ -159,10 +168,10 @@ New misses: *${count}*
 Heights: ${list_preview}${more_str}
 Time: ${when}"
 
-    # send (plain text; if you want Markdown here, add parse_mode=Markdown and escape properly)
     send_alert "$msg"
     echo "[$(date)] Alerted ${count} new misses; range ${START}-${LATEST}; first=$first last=$last"
   fi
 
+  if [ "${SINGLE_PASS:-0}" = "1" ]; then exit 0; fi
   sleep "$CHECK_INTERVAL"
 done

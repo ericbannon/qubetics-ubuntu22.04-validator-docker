@@ -1,31 +1,27 @@
+# /etc/systemd/system/alert_missed_blocks.service
 [Unit]
-Description=Qubetics missed block Telegram alert
-After=network-online.target docker.service
+Description=Qubetics missed-blocks Telegram alerts (by-height scan)
+After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=admin
-Group=admin
-SupplementaryGroups=docker
-
-# Use a directory that is guaranteed accessible
-WorkingDirectory=/home/admin/scripts
-
-# Provide env and fail early if it's missing
+User=root
+Group=root
+Environment=RPC=http://127.0.0.1:26657
+Environment=SCAN_RANGE=1000
+Environment=CHECK_INTERVAL=30
+Environment=INCLUDE_NIL=1
+Environment=STATE_DIR=/var/lib/qubetics-alert
+Environment=STATE_FILE=/var/lib/qubetics-alert/missed_byheight.state
+Environment=SEEN_FILE=/var/lib/qubetics-alert/missed_seen.list
 EnvironmentFile=/etc/default/telegram.env
-ExecStartPre=/usr/bin/test -r /etc/default/telegram.env
-
-# Call bash directly (avoid /usr/bin/env to keep logs simple)
-ExecStart=/bin/bash /home/admin/scripts/alert_missed_blocks.sh
-
+ExecStart=/usr/bin/env bash -lc '/home/admin/scripts/alert_missed_blocks.sh'
 Restart=always
-RestartSec=5
-StandardOutput=journal
-StandardError=journal
-
-# Make sure no global hardening blocks /home (remove if you had these elsewhere)
-# ProtectHome=false
+RestartSec=5s
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
 
 [Install]
 WantedBy=multi-user.target
