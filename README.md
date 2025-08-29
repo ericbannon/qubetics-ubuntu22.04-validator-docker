@@ -27,6 +27,24 @@ The Docker Image will be updated with newer versions of qubeticsd and rebuilt wi
 👉 Subscribe for updates
 <p><strong>Telegram:</strong> <a href="https://t.me/blockdockvalidator">@blockdockvalidator</a></p>
  
+ **Our Vision**
+
+As validators and contributors to the **Qubetics ecosystem**, we are dedicated to building an **open-source, transparent, and reproducible foundation**.  
+
+Our work goes beyond validation into enabling the future of **cross-chain functionality, decentralized development, and community-driven innovation**.  
+
+---
+
+📌 **Q4 2025 Goals**
+• Launch **QubeQode** — developer-friendly framework for building on Qubetics  
+• Contribute **open-source templates & libraries** for validators and delegators  
+• Strengthen **cross-chain interoperability** research and proof-of-concepts  
+
+📌 **Q1 2026 Goals**
+• Roll out **Smart Contract modules** for developers  
+• Prototype decentralized **Asset Marketplaces** powered by TICS  
+• Expand **contributor network** & encourage community-led governance proposals  
+
 Stake with confidence. Here’s what you get as a delegator:
 
 ### 🔒 *Private, non-cloud infrastructure** 
@@ -50,10 +68,11 @@ Not “instanode” or one-click. We run our own configs and share learnings. Ex
 #### 🌐 **Transparency: OPENSOURCE CODE for delegators to view upgrade scripts, automation and new enhancements directly in code**
 
 **What this means for you:** 
-• Higher uptime → more chances to collect rewards  
-• Secure operations → lower operational risk  
-• Predictable upgrades → fewer interruptions  
-• Clear comms → no surprises
+
+* Higher uptime → more chances to collect rewards  
+* Secure operations → lower operational risk  
+* Predictable upgrades → fewer interruptions  
+* Clear comms → no surprises
 
 # Key notes for Opensource Codebase
 
@@ -113,7 +132,7 @@ Runs a background Docker container with the Qubetics configurations installed.
 Once block 175000 is reached, it switches to the upgrade binary in:
 /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.1/bin/qubeticsd
 
-Once block 75000 is reached, it switches to the upgrade binary in:
+Once block 750000 is reached, it switches to the upgrade binary in:
 /mnt/nvme/qubetics/cosmovisor/upgrades/v1.0.2/bin/qubeticsd
 
 #### Run the Docker Container in the Background 🧪
