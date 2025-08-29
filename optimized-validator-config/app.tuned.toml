@@ -26,9 +26,9 @@ prometheus-retention-time = 0
 global-labels = "[]"
 
 [api]
-enable = false
-swagger = false
-address = "tcp://0.0.0.0:1317"
+enable = true
+swagger = true
+address = "tcp://127.0.0.1:1318" #### Reverse proxy for Caddy will listen on 1317
 max-open-connections = 1000
 rpc-read-timeout = 10
 rpc-write-timeout = 0
@@ -87,9 +87,9 @@ tracer = ""
 max-tx-gas-wanted = 0
 
 [json-rpc]
-enable = false
-address = "0.0.0.0:8545"
-ws-address = "0.0.0.0:8546"
+enable = true
+address = "127.0.0.1:8546" #### Reverse proxy for Caddy will listen on 8545
+ws-address = "0.0.0.0:8547"#### Reverse proxy for Caddy will listen on 8546
 api = "eth,net,web3"
 gas-cap = 25000000
 allow-insecure-unlock = false
