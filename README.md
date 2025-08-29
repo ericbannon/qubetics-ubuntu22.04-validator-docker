@@ -27,7 +27,7 @@ The Docker Image will be updated with newer versions of qubeticsd and rebuilt wi
 👉 Subscribe for updates
 <p><strong>Telegram:</strong> <a href="https://t.me/blockdockvalidator">@blockdockvalidator</a></p>
  
- **Our Vision**
+ ## Our Vision
 
 As validators and contributors to the **Qubetics ecosystem**, we are dedicated to building an **open-source, transparent, and reproducible foundation**.  
 
@@ -36,7 +36,6 @@ Our work goes beyond validation into enabling the future of **cross-chain functi
 ---
 
 📌 **Q4 2025 Goals**
-• Launch **QubeQode** — developer-friendly framework for building on Qubetics  
 • Contribute **open-source templates & libraries** for validators and delegators  
 • Strengthen **cross-chain interoperability** research and proof-of-concepts  
 
@@ -44,6 +43,8 @@ Our work goes beyond validation into enabling the future of **cross-chain functi
 • Roll out **Smart Contract modules** for developers  
 • Prototype decentralized **Asset Marketplaces** powered by TICS  
 • Expand **contributor network** & encourage community-led governance proposals  
+
+## Why Stake with Block Dock?
 
 Stake with confidence. Here’s what you get as a delegator:
 
