@@ -3,25 +3,26 @@
 	# debug
 }
 
-# =========================
-#  Tendermint RPC (HTTPS)
-#  node.bannon-validator-tics.com -> 127.0.0.1:26657
-# =========================
+# ===============================
+#  Tendermint RPC (READ-ONLY)
+#  Host: node.bannon-validator-tics.com
+#  Upstream: 127.0.0.1:26657
+# ===============================
 node.bannon-validator-tics.com {
 	encode zstd gzip
 
-	# --- CORS (relaxed). If you want to restrict, replace * with your origin. ---
-	@cors header Origin *
-	header @cors {
-		Access-Control-Allow-Origin              {http.request.header.Origin}
-		Access-Control-Allow-Methods             "GET, POST, OPTIONS"
-		Access-Control-Allow-Headers             {http.request.header.Access-Control-Request-Headers}
-		Access-Control-Allow-Credentials         false
-		Vary                                    "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
+	# --- CORS (relaxed; tighten Origin if you want) ---
+	@fromapp header Origin *
+	header @fromapp {
+		Access-Control-Allow-Origin {http.request.header.Origin}
+		Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+		Access-Control-Allow-Headers {http.request.header.Access-Control-Request-Headers}
+		Access-Control-Allow-Credentials false
+		Vary "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
 		defer
 	}
 
-	# --- Preflight (OPTIONS) -> 204 ---
+	# --- Preflight (OPTIONS) always OK ---
 	@preflight {
 		method OPTIONS
 		header Origin *
@@ -30,41 +31,40 @@ node.bannon-validator-tics.com {
 		respond "" 204
 	}
 
-	# --- A friendly 200 at "/" so external checks don't see 403 ---
-	@root path /
-	handle @root {
-		header Content-Type application/json
-		respond "{\"ok\":true,\"service\":\"tendermint-rpc\",\"hint\":\"try /status or /net_info\"}" 200
+	# --- Combine method + path into ONE matcher for read-only RPC ---
+	@rpc_readonly {
+		method GET HEAD
+		path /abci_info* /abci_query* /block* /block_results* /block_search* /check_tx* \
+		     /commit* /consensus_params* /consensus_state* /dump_consensus_state* /evidence* \
+		     /genesis* /health* /net_info* /num_unconfirmed_txs* /status* /tx* /tx_search* \
+		     /unconfirmed_txs* /validators* /validatorsets* /websocket /subscribe*
 	}
 
-	# --- Allowlisted RPC endpoints ---
-	@rpc_allow {
-		path /abci_info* /abci_query* /block* /block_results* /block_search* /broadcast_tx_async* /broadcast_tx_commit* /broadcast_tx_sync* /check_tx* /commit* /consensus_params* /consensus_state* /dump_consensus_state* /evidence* /genesis* /health* /net_info* /num_unconfirmed_txs* /status* /subscribe* /tx* /tx_search* /unconfirmed_txs* /validators* /validatorsets* /websocket
-	}
-	# WebSocket upgrade is automatic in Caddy; keep HTTP/1.1 for safety.
-	handle @rpc_allow {
+	# --- Proxy allowed read-only endpoints ---
+	handle @rpc_readonly {
 		reverse_proxy 127.0.0.1:26657 {
 			transport http {
-				versions 1.1
+				versions 1.1   # keep h1 for websocket upgrade
 			}
+			# pass-thru common upstream headers
 			header_up Host              {host}
-			header_up X-Real-IP         {http.request.remote}
-			header_up X-Forwarded-For   {http.request.remote}
+			header_up X-Real-IP         {remote_host}
+			header_up X-Forwarded-For   {remote_host}
 			header_up X-Forwarded-Proto {scheme}
 		}
 	}
 
-	# --- Everything else forbidden (explicit 403) ---
+	# --- Everything else (incl. POST/broadcast) is forbidden ---
 	handle {
 		respond "Forbidden" 403
 	}
 }
 
-# =========================
+# ===============================
 #  Website: tics-blockdock.io
-# =========================
+# ===============================
 
-# HTTP -> HTTPS redirect (except ACME)
+# HTTP: only serve ACME challenge, otherwise redirect to HTTPS
 http://tics-blockdock.io, http://www.tics-blockdock.io {
 	@acme path /.well-known/acme-challenge/*
 	handle @acme {
@@ -76,7 +76,7 @@ http://tics-blockdock.io, http://www.tics-blockdock.io {
 	}
 }
 
-# HTTPS site
+# HTTPS: site files
 https://tics-blockdock.io, https://www.tics-blockdock.io {
 	root * /var/www/tics-blockdock
 	encode zstd gzip
@@ -95,65 +95,74 @@ https://tics-blockdock.io, https://www.tics-blockdock.io {
 	}
 }
 
-# =========================
-#  Cosmos LCD (REST) on :1317 (public) -> 127.0.0.1:1318
-# =========================
+# ===============================
+#  Cosmos REST (LCD) over HTTPS
+#  Public listener :1317 -> 127.0.0.1:1318
+# ===============================
 swagger.bannon-validator-tics.com:1317 {
 	encode zstd gzip
 
-	@cors header Origin *
-	header @cors {
-		Access-Control-Allow-Origin              {http.request.header.Origin}
-		Access-Control-Allow-Methods             "GET, POST, OPTIONS"
-		Access-Control-Allow-Headers             {http.request.header.Access-Control-Request-Headers}
-		Access-Control-Allow-Credentials         false
-		Vary                                    "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
+	# CORS
+	@lcd_origin header Origin *
+	header @lcd_origin {
+		Access-Control-Allow-Origin {http.request.header.Origin}
+		Access-Control-Allow-Methods "GET, POST, OPTIONS"
+		Access-Control-Allow-Headers {http.request.header.Access-Control-Request-Headers}
+		Access-Control-Allow-Credentials false
+		Vary "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
 		defer
 	}
 
-	@preflight {
+	# Preflight
+	@lcd_preflight {
 		method OPTIONS
 		header Origin *
 	}
-	handle @preflight {
+	handle @lcd_preflight {
 		respond "" 204
 	}
 
-	reverse_proxy 127.0.0.1:1318 {
-		transport http {
-			versions 1.1
+	# Proxy to local LCD on a different port to avoid loop
+	handle {
+		reverse_proxy 127.0.0.1:1318 {
+			transport http {
+				versions 1.1
+			}
+			header_up Host              {host}
+			header_up X-Real-IP         {remote_host}
+			header_up X-Forwarded-For   {remote_host}
+			header_up X-Forwarded-Proto {scheme}
 		}
-		header_up Host              {host}
-		header_up X-Real-IP         {http.request.remote}
-		header_up X-Forwarded-For   {http.request.remote}
-		header_up X-Forwarded-Proto {scheme}
 	}
 }
 
-# =========================
-#  EVM JSON-RPC on :8545 (public) -> 127.0.0.1:8546
-# =========================
+# ===============================
+#  EVM JSON-RPC over HTTPS
+#  Public listener :8545 -> 127.0.0.1:8546
+# ===============================
 rpc.bannon-validator-tics.com:8545 {
 	encode zstd gzip
 
-	@cors header Origin *
-	header @cors {
-		Access-Control-Allow-Origin              {http.request.header.Origin}
-		Access-Control-Allow-Methods             "POST, OPTIONS"
-		Access-Control-Allow-Headers             {http.request.header.Access-Control-Request-Headers}
-		Access-Control-Allow-Credentials         false
-		Vary                                    "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
+	# CORS for JSON-RPC (POST) + preflight
+	@evm_origin header Origin *
+	header @evm_origin {
+		Access-Control-Allow-Origin {http.request.header.Origin}
+		Access-Control-Allow-Methods "POST, OPTIONS"
+		Access-Control-Allow-Headers {http.request.header.Access-Control-Request-Headers}
+		Access-Control-Allow-Credentials false
+		Vary "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
 		defer
 	}
 
-	@preflight {
+	@evm_preflight {
 		method OPTIONS
 		header Origin *
 	}
-	handle @preflight {
+	handle @evm_preflight {
 		respond "" 204
 	}
 
+	# Accept POST to any path (typical JSON-RPC)
 	@jsonrpc {
 		method POST
 		path /*
@@ -163,10 +172,15 @@ rpc.bannon-validator-tics.com:8545 {
 			transport http {
 				versions 1.1
 			}
-			header_up Host {host}
-			header_up X-Real-IP {http.request.remote}
+			header_up Host              {host}
+			header_up X-Real-IP         {remote_host}
+			header_up X-Forwarded-For   {remote_host}
+			header_up X-Forwarded-Proto {scheme}
 		}
 	}
 
-	respond "Method Not Allowed" 405
+	# Anything else → 405
+	handle {
+		respond "Method Not Allowed" 405
+	}
 }
