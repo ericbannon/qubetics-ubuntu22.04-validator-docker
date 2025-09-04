@@ -204,3 +204,4 @@ Since you have started the Docker container in the background using the "-d" fla
 Instructions on Auto-Upgrades and Safe Reboot in [Host Utilities README](./host-utilities/README.md)
 
 
+= { f_name = "Eric", l_name = "Bannon", email = "eric.bannon@chainguard.dev", groups = ["Engineering-Admin"] },
