@@ -1,0 +1,20 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Qubetics (Tendermint) metrics from your node
+  - job_name: 'qubetics_node'
+    static_configs:
+      - targets: ['localhost:26660']
+
+  # Host OS metrics via node_exporter
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+
+  # Optional: cAdvisor for container-level metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['localhost:8080']
+      

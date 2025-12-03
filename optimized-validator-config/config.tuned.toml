@@ -15,9 +15,9 @@ filter_peers = false
 
 [rpc]
 laddr = "tcp://127.0.0.1:26657"
-cors_allowed_origins = "['*']"
-cors_allowed_methods = "['HEAD', 'GET', 'POST']"
-cors_allowed_headers = "['Origin', 'Accept', 'Content-Type', 'X-Requested-With', 'X-Server-Time']"
+cors_allowed_origins = ["*"]
+cors_allowed_methods = ["HEAD", "GET", "POST"]
+cors_allowed_headers = ["Origin", "Accept", "Content-Type", "X-Requested-With", "X-Server-Time"]
 grpc_laddr = ""
 grpc_max_open_connections = 900
 unsafe = false
@@ -38,7 +38,7 @@ pprof_laddr = "127.0.0.1:6060"
 laddr = "tcp://0.0.0.0:26656"
 external_address = "tcp://73.3.165.55:26656"
 seeds = ""
-persistent_peers = "060e6dfb17718c1c5e80bff5987fe2153a67135b@119.12.166.176:26656,12abe61443f365b2413169c065ce6807222787cf@124.243.136.112:26656,1870facccdb4bd4e692cf15fccab4bcf6149d05a@190.92.230.171:26656,1e361cef3f9d19aa3859bd5b9ba1ef74122263f5@182.160.10.103:26656,20110ea79914da49c2f1cc5bbf8f43f67cd20963@34.42.60.46:26656,2e2986aabe6a1870f14a9a61ca2b88f8c3792426@65.109.93.253:26656,383b73dbee10f92012ad4148816af6bef5f1b503@188.239.39.55:26656,3ab62c6c5537fafca97c7236ad90941b1cc469ad@5.196.110.211:26656,660a5787a0e4990fbac22dc6e0d1cad50bd5b074@114.119.180.222:26656,84d219b7900de7184b0e53ba32d5bb0b5f5982f1@161.97.87.21:26656"
+persistent_peers = "afd50019409285e303a332000e587b58584f56eb@45.10.154.78:26656,7c89606ca3d571f71eb3d003a575c5ecc0f228ed@109.199.113.129:26656,65cb0de46806c3e50395110b84d22275a29150ca@38.242.244.114:26656,2e2986aabe6a1870f14a9a61ca2b88f8c3792426@65.109.93.253:26656,3ab62c6c5537fafca97c7236ad90941b1cc469ad@5.196.110.211:26656,a730174f7f095f011355b30a777b17670541ee61@157.180.50.139:26656,dd42f2d78d918704c8c7ef334b66894c9eca9e44@65.109.101.47:26656,20110ea79914da49c2f1cc5bbf8f43f67cd20963@34.42.60.46:26656"
 addr_book_file = "config/addrbook.json"
 addr_book_strict = false
 max_num_inbound_peers = 80
@@ -85,7 +85,7 @@ trust_period = "112h0m0s"
 discovery_time = "15s"
 temp_dir = ""
 chunk_request_timeout = "10s"
-chunk_fetchers = "4"
+chunk_fetchers = 4
 
 [blocksync]
 version = "v0"
