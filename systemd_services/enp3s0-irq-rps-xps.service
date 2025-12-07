@@ -1,0 +1,12 @@
+[Unit]
+Description=IRQ affinity and RPS/XPS tuning for enp3s0
+After=network-pre.target
+Before=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/tune-enp3s0-irqs.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

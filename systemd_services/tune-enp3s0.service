@@ -1,0 +1,11 @@
+[Unit]
+Description=NIC/IRQ tuning for enp3s0
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/tune-enp3s0.sh
+
+[Install]
+WantedBy=multi-user.target

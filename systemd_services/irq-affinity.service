@@ -1,0 +1,12 @@
+[Unit]
+Description=Set IRQ CPU affinity for NIC
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c "echo ffff > /proc/irq/81/smp_affinity"
+ExecStart=/bin/sh -c "echo ffff > /sys/class/net/enp3s0/queues/rx-0/rps_cpus"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
