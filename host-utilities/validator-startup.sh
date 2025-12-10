@@ -29,8 +29,11 @@ if ! docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
   --name "$CONTAINER_NAME" \
   --privileged \
   --network host \
-  --cpus="16" \
-  --cpuset-cpus="0-15" \
+  --restart unless-stopped \
+  --cpuset-cpus="0-7" \
+  --cpus="8" \
+  --memory=16g \
+  --memory-swap=24g \
   --ulimit nofile=65536:65536 \
   --ulimit memlock=-1 \
   --cap-add sys_nice \
