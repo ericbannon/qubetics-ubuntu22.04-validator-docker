@@ -1,0 +1,126 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "iteration": 1712100000000,
+  "links": [],
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Current Peers (Inbound / Outbound)",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "tendermint_p2p_peers" }
+      ],
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 3 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Block Propagation Delay (ms)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "tendermint_consensus_block_latency_ms",
+          "legendFormat": "latency"
+        }
+      ],
+      "gridPos": { "x": 4, "y": 0, "w": 8, "h": 3 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Network Throughput (TX/RX Mbps)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(node_network_transmit_bytes_total{device=\"enp3s0\"}[1m]) * 8 / 1e6",
+          "legendFormat": "TX Mbps"
+        },
+        {
+          "expr": "rate(node_network_receive_bytes_total{device=\"enp3s0\"}[1m]) * 8 / 1e6",
+          "legendFormat": "RX Mbps"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 3, "w": 12, "h": 4 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Packet Errors & Drops",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(node_network_receive_errs_total{device=\"enp3s0\"}[1m])",
+          "legendFormat": "RX Errors"
+        },
+        {
+          "expr": "rate(node_network_transmit_errs_total{device=\"enp3s0\"}[1m])",
+          "legendFormat": "TX Errors"
+        },
+        {
+          "expr": "rate(node_network_receive_drop_total{device=\"enp3s0\"}[1m])",
+          "legendFormat": "RX Drops"
+        },
+        {
+          "expr": "rate(node_network_transmit_drop_total{device=\"enp3s0\"}[1m])",
+          "legendFormat": "TX Drops"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 7, "w": 12, "h": 4 }
+    },
+    {
+      "type": "timeseries",
+      "title": "NIC Saturation (%)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "100 * (rate(node_network_receive_bytes_total{device=\"enp3s0\"}[30s]) * 8 / 2.5e9)",
+          "legendFormat": "RX %"
+        },
+        {
+          "expr": "100 * (rate(node_network_transmit_bytes_total{device=\"enp3s0\"}[30s]) * 8 / 2.5e9)",
+          "legendFormat": "TX %"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 11, "w": 12, "h": 4 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency to Router & Cloudflare DNS",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "probe_icmp_duration_seconds{instance=\"192.168.50.1\"} * 1000",
+          "legendFormat": "Router (ms)"
+        },
+        {
+          "expr": "probe_icmp_duration_seconds{instance=\"1.1.1.1\"} * 1000",
+          "legendFormat": "Cloudflare DNS (ms)"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 15, "w": 12, "h": 4 }
+    },
+    {
+      "type": "stat",
+      "title": "Missed Blocks (Rolling 1000)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "increase(tendermint_consensus_missed_blocks_total[1000s])",
+          "legendFormat": "Missed"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 19, "w": 4, "h": 3 }
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 36,
+  "title": "Validator Network Performance Dashboard",
+  "version": 1,
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  }
+}

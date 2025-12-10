@@ -1,118 +1,88 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# --- Config ---
-RPC="http://localhost:26657"
-RUN_SECONDS=$((6 * 3600))   # 6 hours
-SLEEP_SECS=1                # how often to poll latest height
-LOG_FILE="${HOME}/missed_zero_blocks_$(date -u +%Y%m%dT%H%M%SZ).log"
+RPC="${RPC:-http://localhost:26657}"
+DURATION=$((6 * 3600))   # 6 hours
+SLEEP=5
 
-echo "=== Zero-ending block miss tracker ==="
-echo "RPC endpoint: $RPC"
-echo "Duration: $((RUN_SECONDS / 3600)) hours"
-echo "Log file: $LOG_FILE"
+echo "[INFO] RPC = $RPC"
+echo "[INFO] Monitoring ONLY blocks where height % 10 == 0"
+echo "[INFO] Duration = $DURATION seconds"
 echo
 
-# --- Get our consensus address ---
-echo "Detecting validator consensus address from $RPC/status ..."
-MY_ADDR=$(curl -s "$RPC/status" | jq -r '.result.validator_info.address // empty')
+# Detect consensus address
+if [[ -z "${CONS_ADDR:-}" ]]; then
+  CONS_ADDR=$(curl -s "$RPC/status" | jq -r '.result.validator_info.address')
+fi
 
-if [[ -z "$MY_ADDR" || "$MY_ADDR" == "null" ]]; then
-  echo "ERROR: Could not determine validator_info.address from /status"
-  echo "Make sure this node is a validator and RPC is correct."
+if [[ -z "$CONS_ADDR" || "$CONS_ADDR" == "null" ]]; then
+  echo "[ERROR] Could not detect validator consensus address!"
   exit 1
 fi
 
-echo "Validator consensus address: $MY_ADDR"
+echo "[INFO] Validator address: $CONS_ADDR"
 echo
 
-# --- Initial chain height ---
-LATEST_STR=$(curl -s "$RPC/status" | jq -r '.result.sync_info.latest_block_height // "0"')
-if ! [[ "$LATEST_STR" =~ ^[0-9]+$ ]]; then
-  echo "ERROR: latest_block_height is not numeric: $LATEST_STR"
-  exit 1
-fi
+start_time=$(date +%s)
 
-LAST_HEIGHT=$LATEST_STR
-echo "Starting at height: $LAST_HEIGHT"
-echo
+# Start from the next block
+latest=$(curl -s "$RPC/status" | jq -r '.result.sync_info.latest_block_height | tonumber')
+next=$((latest + 1))
 
-START_TS=$(date +%s)
-END_TS=$((START_TS + RUN_SECONDS))
+checked=0
+missed_self=0
 
-checked_zero_blocks=0
-missed_zero_blocks=0
-signed_zero_blocks=0
-
-echo "Tracking… (Ctrl+C to stop early)"
-echo "-----------------------------------------"
-
-while :; do
-  now_ts=$(date +%s)
-  if (( now_ts >= END_TS )); then
+while true; do
+  now=$(date +%s)
+  if (( now - start_time >= DURATION )); then
     echo
-    echo "Reached 6-hour limit, exiting loop."
-    break
+    echo "===== DONE (6 HOURS) ====="
+    echo "Zero-ending blocks checked:      $checked"
+    echo "Zero-ending blocks YOU missed:   $missed_self"
+    exit 0
   fi
 
-  # Get current chain height
-  LATEST_STR=$(curl -s "$RPC/status" | jq -r '.result.sync_info.latest_block_height // "0"' || echo "0")
+  latest=$(curl -s "$RPC/status" | jq -r '.result.sync_info.latest_block_height | tonumber')
 
-  if ! [[ "$LATEST_STR" =~ ^[0-9]+$ ]]; then
-    echo "WARN: Non-numeric latest_block_height: $LATEST_STR (skipping iteration)"
-    sleep "$SLEEP_SECS"
-    continue
-  fi
+  while (( next <= latest )); do
+    h=$next
+    next=$((next + 1))
 
-  CUR_HEIGHT=$LATEST_STR
-
-  if (( CUR_HEIGHT <= LAST_HEIGHT )); then
-    sleep "$SLEEP_SECS"
-    continue
-  fi
-
-  # Process new heights between LAST_HEIGHT+1 and CUR_HEIGHT
-  for (( h = LAST_HEIGHT + 1; h <= CUR_HEIGHT; h++ )); do
-    # Only care about heights ending in 0
+    # Only care about blocks ending in 0
     if (( h % 10 != 0 )); then
       continue
     fi
 
-    # Pull the block and see if our validator signed the last_commit
-    BLOCK_JSON=$(curl -s "$RPC/block?height=$h" || echo "")
-    if [[ -z "$BLOCK_JSON" ]]; then
-      echo "WARN: Failed to fetch block $h"
-      continue
-    fi
+    checked=$((checked + 1))
 
-    checked_zero_blocks=$((checked_zero_blocks + 1))
+    commit=$(curl -s "$RPC/commit?height=$h")
 
-    # Extract all validator_address values from last_commit signatures
-    if echo "$BLOCK_JSON" \
-        | jq -r '.result.block.last_commit.signatures[].validator_address // empty' \
-        | grep -q "$MY_ADDR"; then
-      signed_zero_blocks=$((signed_zero_blocks + 1))
-      status="SIGNED"
+    ts=$(echo "$commit" | jq -r '.result.signed_header.header.time // "unknown"')
+
+    # Did *you* sign?
+    signed=$(echo "$commit" \
+      | jq --arg A "$CONS_ADDR" \
+        '[.result.signed_header.commit.signatures[]
+          | select(.validator_address == $A and .block_id_flag == 2)] | length')
+
+    # How many validators in total missed?
+    # block_id_flag != 2 => absent or nil vote
+    total_missed=$(echo "$commit" \
+      | jq '[.result.signed_header.commit.signatures[]
+             | select(.block_id_flag != 2)] | length')
+
+    if [[ "$signed" == "0" ]]; then
+      missed_self=$((missed_self + 1))
+      echo "[MISS] height=$h ts=$ts — YOU did NOT sign (self_miss $missed_self / $checked) | missed_validators=$total_missed"
     else
-      missed_zero_blocks=$((missed_zero_blocks + 1))
-      status="MISSED"
+      echo "[OK]   height=$h ts=$ts — you signed | missed_validators=$total_missed"
     fi
 
-    msg="$(date -u +%Y-%m-%dT%H:%M:%SZ) height=$h ends_with_0 status=$status total_checked=$checked_zero_blocks signed=$signed_zero_blocks missed=$missed_zero_blocks"
-    echo "$msg"
-    echo "$msg" >> "$LOG_FILE"
+    # Light summary every 50 zero-ending blocks
+    if (( checked % 50 == 0 )); then
+      echo "[SUMMARY] checked_zero=$checked | your_misses=$missed_self (last_height=$h, last_missed_validators=$total_missed)"
+    fi
   done
 
-  LAST_HEIGHT=$CUR_HEIGHT
-  sleep "$SLEEP_SECS"
+  sleep $SLEEP
 done
-
-echo
-echo "========== FINAL SUMMARY =========="
-echo "Time window: $(date -d @"$START_TS" -u +%Y-%m-%dT%H:%M:%SZ) to $(date -d @"$END_TS" -u +%Y-%m-%dT%H:%M:%SZ) (UTC)"
-echo "Validator address: $MY_ADDR"
-echo "Zero-ending blocks checked: $checked_zero_blocks"
-echo "Zero-ending blocks SIGNED:  $signed_zero_blocks"
-echo "Zero-ending blocks MISSED:  $missed_zero_blocks"
-echo "Log file: $LOG_FILE"
-echo "==================================="

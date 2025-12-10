@@ -1,0 +1,454 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1beta1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "network-performance-qubetics",
+    "namespace": "default"
+  },
+  "spec": {
+    "title": "Qubetics Network Performance",
+    "uid": "qubetics-network-performance",
+    "tags": ["qubetics", "network", "node-exporter", "cometbft"],
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "refresh": "15s",
+    "schemaVersion": 42,
+    "editable": true,
+    "graphTooltip": 0,
+    "templating": {
+      "list": [
+        {
+          "name": "DS_PROMETHEUS",
+          "type": "datasource",
+          "query": "prometheus",
+          "refresh": 1,
+          "current": {
+            "text": "Prometheus",
+            "value": "qubetics-prom"
+          },
+          "options": []
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "type": "dashboard",
+          "name": "Annotations & Alerts",
+          "enable": false,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "builtIn": 1
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "type": "stat",
+        "title": "Current Peers",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+        "targets": [
+          {
+            "expr": "max(cometbft_p2p_peers)",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "none",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 2,
+        "type": "stat",
+        "title": "Link Speed (configured)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+        "targets": [
+          {
+            "expr": "2500",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": ["last"],
+            "fields": "",
+            "values": true
+          },
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "Mbps"
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 3,
+        "type": "stat",
+        "title": "NIC Utilization (TX+RX, % of 2.5G)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+        "targets": [
+          {
+            "expr": "((sum(rate(node_network_transmit_bytes_total{device!=\"lo\"}[5m])) + sum(rate(node_network_receive_bytes_total{device!=\"lo\"}[5m]))) * 8 / 1e6) / 2500 * 100",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": 0 },
+                { "color": "orange", "value": 50 },
+                { "color": "red", "value": 80 }
+              ]
+            }
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 4,
+        "type": "stat",
+        "title": "Catching Up (0 = synced)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+        "targets": [
+          {
+            "expr": "max(cometbft_consensus_catching_up)",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "none",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": 0 },
+                { "color": "red", "value": 0.5 }
+              ]
+            }
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 5,
+        "type": "timeseries",
+        "title": "Total Network Throughput (TX/RX Mbps)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+        "targets": [
+          {
+            "expr": "sum(rate(node_network_transmit_bytes_total{device!=\"lo\"}[5m])) * 8 / 1e6",
+            "legendFormat": "TX Mbps",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(node_network_receive_bytes_total{device!=\"lo\"}[5m])) * 8 / 1e6",
+            "legendFormat": "RX Mbps",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "Mbps",
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 1,
+              "fillOpacity": 10,
+              "showPoints": "auto"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "type": "timeseries",
+        "title": "Per-Interface Throughput (Mbps)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+        "targets": [
+          {
+            "expr": "rate(node_network_transmit_bytes_total{device!=\"lo\"}[5m]) * 8 / 1e6",
+            "legendFormat": "{{device}} TX",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(node_network_receive_bytes_total{device!=\"lo\"}[5m]) * 8 / 1e6",
+            "legendFormat": "{{device}} RX",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "Mbps",
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 1,
+              "fillOpacity": 10,
+              "showPoints": "auto"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "type": "timeseries",
+        "title": "Packet Errors & Drops (packets/s)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+        "targets": [
+          {
+            "expr": "sum(rate(node_network_receive_errs_total{device!=\"lo\"}[5m]))",
+            "legendFormat": "RX Errors",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(node_network_transmit_errs_total{device!=\"lo\"}[5m]))",
+            "legendFormat": "TX Errors",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(node_network_receive_drop_total{device!=\"lo\"}[5m]))",
+            "legendFormat": "RX Drops",
+            "refId": "C"
+          },
+          {
+            "expr": "sum(rate(node_network_transmit_drop_total{device!=\"lo\"}[5m]))",
+            "legendFormat": "TX Drops",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "pps",
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 1,
+              "fillOpacity": 10,
+              "showPoints": "auto",
+              "axisPlacement": "auto"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "type": "timeseries",
+        "title": "NIC Utilization (TX/RX % of 2.5G)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+        "targets": [
+          {
+            "expr": "(sum(rate(node_network_transmit_bytes_total{device!=\"lo\"}[5m])) * 8 / 1e6) / 2500 * 100",
+            "legendFormat": "TX %",
+            "refId": "A"
+          },
+          {
+            "expr": "(sum(rate(node_network_receive_bytes_total{device!=\"lo\"}[5m])) * 8 / 1e6) / 2500 * 100",
+            "legendFormat": "RX %",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 1,
+              "fillOpacity": 10,
+              "showPoints": "auto"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "type": "timeseries",
+        "title": "Net I/O (MB/s, all interfaces)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+        "targets": [
+          {
+            "expr": "sum(rate(node_network_receive_bytes_total{device!=\"lo\"}[5m])) / 1048576",
+            "legendFormat": "RX MB/s",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(node_network_transmit_bytes_total{device!=\"lo\"}[5m])) / 1048576",
+            "legendFormat": "TX MB/s",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "MBs",
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "drawStyle": "line",
+              "lineWidth": 1,
+              "fillOpacity": 10,
+              "showPoints": "auto"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        }
+      }
+    ]
+  },
+  "status": {}
+}

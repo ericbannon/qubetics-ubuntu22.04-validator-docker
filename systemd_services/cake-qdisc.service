@@ -1,0 +1,12 @@
+[Unit]
+Description=Apply CAKE QoS to enp3s0
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/tc qdisc replace dev enp3s0 root cake bandwidth 34mbit diffserv4 triple-isolate nonat nowash no-ack-filter split-gso rtt 100ms raw
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

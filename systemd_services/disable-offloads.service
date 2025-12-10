@@ -1,0 +1,23 @@
+[Unit]
+Description=Disable NIC Offloads for Validator
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/ethtool -K enp3s0 gro off gso off tso off
+
+[Install]
+WantedBy=multi-user.target
+EOF
+[Unit]
+Description=Disable NIC Offloads for Validator
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/ethtool -K enp3s0 gro off gso off tso off
+
+[Install]
+WantedBy=multi-user.target
