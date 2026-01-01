@@ -112,7 +112,7 @@ for ((j=1; j<=START_RETRIES; j++)); do
   docker exec "$CONTAINER_NAME" bash -lc "
     nohup cosmovisor run start \
       --home \"$DAEMON_HOME\" \
-      --json-rpc.api eth,txpool,personal,net,debug,web3 \
+      --json-rpc.api eth,net,web3 \
       >> \"$DAEMON_HOME/cosmovisor.log\" 2>&1 &
   "
 
