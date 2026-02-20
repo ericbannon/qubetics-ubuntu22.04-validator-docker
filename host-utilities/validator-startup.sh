@@ -5,21 +5,35 @@ exec >> /home/admin/logs/validator-startup.log 2>&1
 mkdir -p /home/admin/logs
 CONTAINER_NAME="validator-node"
 DAEMON_HOME="/mnt/nvme/qubetics"
-VALIDATOR_IMAGE="bannimal/tics-validator-node:v1.0.2"
-: "${UPGRADEVER:=v1.0.2}"  # must match the on-chain plan dir name under upgrades/
+VALIDATOR_IMAGE="bannimal/validator-node:v2.0.0"
+: "${UPGRADEVER:=v2.0.0}"  # must match the on-chain plan dir name under upgrades/
+
+
+docker pull --platform=linux/amd64 "$VALIDATOR_IMAGE"
+NEW_IMAGE_ID="$(docker image inspect -f '{{.Id}}' "$VALIDATOR_IMAGE")"
+
+if docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
+  CUR_IMAGE_ID="$(docker inspect -f '{{.Image}}' "$CONTAINER_NAME")"
+  if [ "$CUR_IMAGE_ID" != "$NEW_IMAGE_ID" ]; then
+    echo "♻️ Image changed; recreating container..."
+    docker stop "$CONTAINER_NAME" || true
+    docker rm "$CONTAINER_NAME" || true
+  fi
+fi
+
 
 # ✅ Wait for Docker daemon (max 30s)
-RETRIES=30
-until docker info >/dev/null 2>&1 || [ $RETRIES -eq 0 ]; do
-  echo "⏳ Waiting for Docker to be ready..."
-  sleep 1
-  RETRIES=$((RETRIES - 1))
-done
+#RETRIES=30
+#until docker info >/dev/null 2>&1 || [ $RETRIES -eq 0 ]; do
+#  echo "⏳ Waiting for Docker to be ready..."
+#  sleep 1
+#  RETRIES=$((RETRIES - 1))
+#done
 
-if [ $RETRIES -eq 0 ]; then
-  echo "❌ Docker not ready. Exiting."
-  exit 1
-fi
+#if [ $RETRIES -eq 0 ]; then
+#  echo "❌ Docker not ready. Exiting."
+#  exit 1
+#fi
 
 # ✅ Create container if it doesn't exist
 if ! docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
